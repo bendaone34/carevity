@@ -75,7 +75,7 @@ export default function NewPatientPage() {
     };
 
     try {
-      addPatient(patientData);
+      await addPatient(patientData);
       router.push('/patients');
     } catch (error) {
       console.error('Error saving patient:', error);

@@ -77,7 +77,9 @@ export default function WeekCalendar() {
     }
 
     // Update appointment
-    updateAppointment(appointmentId, { date, time });
+    updateAppointment(appointmentId, { date, time }).catch(() => {
+      toast.error('Failed to reschedule appointment');
+    });
     
     toast.success(
       `Appointment moved to ${formatTime(time)} on ${new Date(date).toLocaleDateString('en-US', { 

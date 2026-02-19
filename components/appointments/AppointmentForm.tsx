@@ -69,10 +69,10 @@ export default function AppointmentForm({ appointment, onClose }: AppointmentFor
 
     try {
       if (isEditing && appointment) {
-        updateAppointment(appointment.id, appointmentData);
+        await updateAppointment(appointment.id, appointmentData);
         toast.success('Appointment updated successfully');
       } else {
-        addAppointment(appointmentData);
+        await addAppointment(appointmentData);
         toast.success('Appointment created successfully');
       }
       onClose();

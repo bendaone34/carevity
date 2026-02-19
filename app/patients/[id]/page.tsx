@@ -118,9 +118,9 @@ export default function PatientDetailPage() {
   const patientAppointments = appointments.filter((a) => a.patientId === patient.id);
   const patientRecords = medicalRecords.filter((r) => r.patientId === patient.id);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this patient?')) {
-      deletePatient(patient.id);
+      await deletePatient(patient.id);
       router.push('/patients');
     }
   };

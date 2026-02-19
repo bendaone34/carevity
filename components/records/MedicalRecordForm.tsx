@@ -68,9 +68,9 @@ export default function MedicalRecordForm({ record, onClose }: MedicalRecordForm
 
     try {
       if (isEditing && record) {
-        updateMedicalRecord(record.id, recordData);
+        await updateMedicalRecord(record.id, recordData);
       } else {
-        addMedicalRecord(recordData);
+        await addMedicalRecord(recordData);
       }
       onClose();
     } catch (error) {

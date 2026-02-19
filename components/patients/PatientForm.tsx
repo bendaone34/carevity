@@ -84,9 +84,9 @@ export default function PatientForm({ patient, onClose }: PatientFormProps) {
 
     try {
       if (isEditing && patient) {
-        updatePatient(patient.id, patientData);
+        await updatePatient(patient.id, patientData);
       } else {
-        addPatient(patientData);
+        await addPatient(patientData);
       }
       router.push('/patients');
     } catch (error) {

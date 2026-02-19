@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Heart, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,12 +20,21 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
-    // Simulate login
-    setTimeout(() => {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (error) {
+      setError(error.message);
       setIsLoading(false);
+    } else {
       router.push('/dashboard');
-    }, 1000);
+      router.refresh();
+    }
   };
 
   return (
@@ -94,6 +105,10 @@ export default function LoginPage() {
               </a>
             </div>
 
+            {error && (
+              <p className="text-sm text-red-500 text-center">{error}</p>
+            )}
+
             <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
               Sign In
             </Button>
@@ -107,12 +122,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Demo Credentials */}
-        <div className="mt-4 p-4 bg-white/50 dark:bg-slate-800/50 rounded-xl text-center text-sm">
-          <p className="text-gray-600 dark:text-gray-300">
-            <strong>Demo:</strong> Use any email/password to login
-          </p>
-        </div>
       </div>
     </div>
   );
