@@ -22,18 +22,24 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push('/dashboard');
+        router.refresh();
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+      console.error(err);
+    } finally {
       setIsLoading(false);
-    } else {
-      router.push('/dashboard');
-      router.refresh();
     }
   };
 

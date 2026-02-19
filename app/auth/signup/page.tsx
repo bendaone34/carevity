@@ -36,20 +36,25 @@ export default function SignupPage() {
     setIsLoading(true);
     setError('');
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: { full_name: formData.name },
-      },
-    });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: { full_name: formData.name },
+        },
+      });
 
-    if (error) {
-      setError(error.message);
-      setIsLoading(false);
-    } else {
-      setEmailSent(true);
+      if (error) {
+        setError(error.message);
+      } else {
+        setEmailSent(true);
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+      console.error(err);
+    } finally {
       setIsLoading(false);
     }
   };
