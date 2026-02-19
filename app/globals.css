@@ -1,26 +1,105 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: 14 165 233;
+  --primary-dark: 2 132 199;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Light mode defaults */
+body {
+  @apply bg-gray-50 text-gray-900 antialiased transition-colors duration-300;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Dark mode body */
+.dark body {
+  @apply bg-slate-900 text-gray-100;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-sky-500 hover:bg-sky-600 text-white focus:ring-sky-500 px-4 py-2;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-gray-500 px-4 py-2;
+    @apply dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-500 hover:bg-red-600 text-white focus:ring-red-500 px-4 py-2;
+  }
+
+  .btn-ghost {
+    @apply btn hover:bg-gray-100 text-gray-600 px-4 py-2;
+    @apply dark:hover:bg-slate-700 dark:text-gray-300;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-colors duration-300;
+    @apply dark:bg-slate-800 dark:border-slate-700;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-md hover:border-gray-200 cursor-pointer;
+    @apply dark:hover:border-slate-600;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all duration-200 bg-white;
+    @apply dark:bg-slate-800 dark:border-slate-600 dark:text-white dark:placeholder-gray-400;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
+    @apply dark:text-gray-300;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+}
+
+.dark ::-webkit-scrollbar-track {
+  @apply bg-slate-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-slate-600 hover:bg-slate-500;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Dark mode transitions */
+* {
+  @apply transition-colors duration-200;
 }
