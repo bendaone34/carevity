@@ -7,6 +7,7 @@ import { useStore } from '@/lib/store';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { Save, X, ArrowLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function NewPatientPage() {
   const router = useRouter();
@@ -76,9 +77,11 @@ export default function NewPatientPage() {
 
     try {
       await addPatient(patientData);
+      toast.success('Patient added successfully');
       router.push('/patients');
     } catch (error) {
-      console.error('Error saving patient:', error);
+      toast.error('Failed to save patient. Please try again.');
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

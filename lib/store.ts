@@ -109,6 +109,7 @@ function medicalRecordToDb(r: Omit<MedicalRecord, 'id' | 'patientName'>) {
 
 interface AppState {
   isLoading: boolean;
+  setLoading: (loading: boolean) => void;
 
   // Patients
   patients: Patient[];
@@ -139,6 +140,7 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   isLoading: false,
+  setLoading: (loading) => set({ isLoading: loading }),
 
   // ─── Patients ─────────────────────────────────────────────────────────────
 

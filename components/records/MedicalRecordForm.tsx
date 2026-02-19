@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Save, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 const doctors = [
   'Dr. Emily Smith',
   'Dr. James Wilson',
@@ -75,12 +76,15 @@ export default function MedicalRecordForm({ record, onClose }: MedicalRecordForm
     try {
       if (isEditing && record) {
         await updateMedicalRecord(record.id, recordData);
+        toast.success('Record updated successfully');
       } else {
         await addMedicalRecord(recordData);
+        toast.success('Record created successfully');
       }
       onClose();
     } catch (error) {
-      console.error('Error saving medical record:', error);
+      toast.error('Failed to save record. Please try again.');
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

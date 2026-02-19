@@ -4,9 +4,12 @@ import { Users, Calendar, FileText, CheckCircle } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { useStore } from '@/lib/store';
+import { useUser } from '@/hooks/useUser';
 
 export default function DashboardPage() {
   const { patients = [], appointments = [] } = useStore();
+  const user = useUser();
+  const name = user?.user_metadata?.full_name || user?.email || 'there';
 
   const today = new Date().toISOString().split('T')[0];
   
@@ -49,7 +52,7 @@ export default function DashboardPage() {
     <div className="animate-fadeIn">
       <Header
         title="Dashboard"
-        subtitle="Welcome back, Dr. Smith! Here's what's happening today."
+        subtitle={`Welcome back, ${name}! Here's what's happening today.`}
       />
 
       {/* Stats Grid */}

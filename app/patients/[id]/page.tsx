@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Mail,
   Phone,
@@ -18,8 +18,9 @@ import {
   ArrowLeft,
   FileText,
   Clock,
-  Loader2,
 } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
+import PatientForm from '@/components/patients/PatientForm';
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-US', {
@@ -34,9 +35,7 @@ function calculateAge(dateOfBirth: string): number {
   const birthDate = new Date(dateOfBirth);
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
   return age;
 }
 
@@ -48,40 +47,10 @@ export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { patients, deletePatient, appointments, medicalRecords } = useStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const patientId = params.id as string;
-
-  // Debug logs
-  useEffect(() => {
-    console.log('=== PATIENT DETAIL PAGE DEBUG ===');
-    console.log('URL Params:', params);
-    console.log('Patient ID from URL:', patientId);
-    console.log('Type of Patient ID:', typeof patientId);
-    console.log('Number of patients in store:', patients.length);
-    console.log('All patient IDs:', patients.map(p => ({ id: p.id, type: typeof p.id, name: p.firstName })));
-    
-    // Try to find the patient
-    const found = patients.find((p) => p.id === patientId);
-    console.log('Found patient:', found);
-    
-    // Also try with number comparison
-    const foundWithNumber = patients.find((p) => p.id == patientId);
-    console.log('Found with loose comparison:', foundWithNumber);
-    
-    setIsLoading(false);
-  }, [params, patientId, patients]);
-
-  // Find patient - try both string and loose comparison
-  const patient = patients.find((p) => p.id === patientId) || patients.find((p) => String(p.id) === String(patientId));
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
-      </div>
-    );
-  }
+  const patient = patients.find((p) => p.id === patientId);
 
   if (!patient) {
     return (
@@ -89,21 +58,10 @@ export default function PatientDetailPage() {
         <div className="w-20 h-20 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
           <User className="w-10 h-10 text-gray-400 dark:text-gray-500" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-          Patient not found
-        </h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-2">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Patient not found</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">
           The patient you&apos;re looking for doesn&apos;t exist.
         </p>
-        
-        {/* Debug info */}
-        <div className="bg-gray-100 dark:bg-slate-700 rounded-lg p-4 mb-4 text-sm">
-          <p className="text-gray-600 dark:text-gray-300">Debug Info:</p>
-          <p className="text-gray-500 dark:text-gray-400">Looking for ID: "{patientId}"</p>
-          <p className="text-gray-500 dark:text-gray-400">Available IDs: {patients.map(p => `"${p.id}"`).join(', ')}</p>
-          <p className="text-gray-500 dark:text-gray-400">Total patients: {patients.length}</p>
-        </div>
-        
         <Link
           href="/patients"
           className="inline-flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
@@ -127,7 +85,6 @@ export default function PatientDetailPage() {
 
   return (
     <div className="animate-fadeIn">
-      {/* Back Button */}
       <Link
         href="/patients"
         className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white mb-6 transition-colors"
@@ -150,7 +107,7 @@ export default function PatientDetailPage() {
                 {patient.firstName} {patient.lastName}
               </h1>
               <p className="text-gray-500 dark:text-gray-400">
-                Patient ID: #{patient.id} • Added {formatDate(patient.createdAt)}
+                Added {formatDate(patient.createdAt)}
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 capitalize">
@@ -168,7 +125,10 @@ export default function PatientDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+            >
               <Edit className="w-4 h-4" />
               Edit
             </button>
@@ -241,13 +201,12 @@ export default function PatientDetailPage() {
                 <p className="font-medium text-gray-800 dark:text-white">{patient.bloodType || 'Unknown'}</p>
               </div>
             </div>
-
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-4 h-4 text-amber-500" />
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Allergies</p>
               </div>
-              {patient.allergies && patient.allergies.length > 0 ? (
+              {patient.allergies?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {patient.allergies.map((allergy, idx) => (
                     <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
@@ -259,13 +218,12 @@ export default function PatientDetailPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">No known allergies</p>
               )}
             </div>
-
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Heart className="w-4 h-4 text-rose-500" />
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Medical Conditions</p>
               </div>
-              {patient.medicalConditions && patient.medicalConditions.length > 0 ? (
+              {patient.medicalConditions?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {patient.medicalConditions.map((condition, idx) => (
                     <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">
@@ -283,7 +241,7 @@ export default function PatientDetailPage() {
         {/* Emergency Contact */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Emergency Contact</h3>
-          {patient.emergencyContact && patient.emergencyContact.name ? (
+          {patient.emergencyContact?.name ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -324,7 +282,6 @@ export default function PatientDetailPage() {
 
       {/* Appointments & Records */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        {/* Appointments */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Appointments</h3>
@@ -356,7 +313,6 @@ export default function PatientDetailPage() {
           )}
         </div>
 
-        {/* Records */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Medical Records</h3>
@@ -381,6 +337,19 @@ export default function PatientDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Patient Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Patient"
+        size="lg"
+      >
+        <PatientForm
+          patient={patient}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

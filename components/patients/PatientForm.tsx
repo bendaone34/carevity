@@ -8,6 +8,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Save, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface PatientFormProps {
   patient?: Patient;
@@ -85,12 +86,19 @@ export default function PatientForm({ patient, onClose }: PatientFormProps) {
     try {
       if (isEditing && patient) {
         await updatePatient(patient.id, patientData);
+        toast.success('Patient updated successfully');
       } else {
         await addPatient(patientData);
+        toast.success('Patient added successfully');
       }
-      router.push('/patients');
+      if (onClose) {
+        onClose();
+      } else {
+        router.push('/patients');
+      }
     } catch (error) {
-      console.error('Error saving patient:', error);
+      toast.error('Failed to save patient. Please try again.');
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

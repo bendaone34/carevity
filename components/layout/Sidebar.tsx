@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -13,9 +13,27 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { useUser } from '@/hooks/useUser';
+import { createClient } from '@/lib/supabase/client';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const user = useUser();
+
+  const fullName = user?.user_metadata?.full_name || user?.email || 'User';
+  const initials = fullName
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/auth/login');
+  };
 
   const menuItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -59,8 +77,8 @@ export default function Sidebar() {
                   <div className="flex items-center gap-3">
                     <IconComponent
                       className={`w-5 h-5 ${
-                        isActive 
-                          ? 'text-sky-600 dark:text-sky-400' 
+                        isActive
+                          ? 'text-sky-600 dark:text-sky-400'
                           : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
                       }`}
                     />
@@ -76,23 +94,25 @@ export default function Sidebar() {
 
       {/* Theme Toggle & User Section */}
       <div className="p-4 border-t border-gray-100 dark:border-slate-700 space-y-4">
-        {/* Theme Toggle */}
         <div className="flex items-center justify-between px-4 py-2">
           <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
           <ThemeToggle />
         </div>
 
-        {/* User */}
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-700/50">
-          <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">DS</span>
+          <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center shrink-0">
+            <span className="text-white font-semibold text-sm">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-800 dark:text-white truncate">Dr. Smith</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{fullName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
           </div>
-          <button className="p-2 hover:bg-white dark:hover:bg-slate-600 rounded-lg transition-colors">
-            <LogOut className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="p-2 hover:bg-white dark:hover:bg-slate-600 rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" />
           </button>
         </div>
       </div>
