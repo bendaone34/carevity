@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -6,9 +6,31 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
 
   if (code) {
-    const supabase = createClient();
+    // Build the redirect response first so we can attach cookies to it
+    const response = NextResponse.redirect(`${origin}/dashboard`);
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            // Write session cookies directly onto the redirect response
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
+
     await supabase.auth.exchangeCodeForSession(code);
+    return response;
   }
 
-  return NextResponse.redirect(`${origin}/dashboard`);
+  // No code present — send to login
+  return NextResponse.redirect(`${origin}/auth/login`);
 }

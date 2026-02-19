@@ -7,7 +7,13 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Save, X } from 'lucide-react';
-import { doctors } from '@/data/mockData';
+const doctors = [
+  'Dr. Emily Smith',
+  'Dr. James Wilson',
+  'Dr. Sarah Lee',
+  'Dr. Michael Brown',
+  'Dr. Jennifer Davis',
+];
 
 interface MedicalRecordFormProps {
   record?: MedicalRecord;

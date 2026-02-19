@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Heart, Users, Calendar, FileText, BarChart3, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import Button from '@/components/ui/Button';
 import ChatBot from '@/components/ChatBot';
+import { createClient } from '@/lib/supabase/client';
 
 const features = [
   {
@@ -31,6 +34,14 @@ const features = [
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) router.replace('/dashboard');
+    });
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 dark:from-slate-900 dark:to-slate-800">
