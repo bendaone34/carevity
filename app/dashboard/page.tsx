@@ -1,21 +1,21 @@
 'use client';
 
-import { Users, Calendar, FileText, CheckCircle } from 'lucide-react';
+import { Users, Calendar, BookOpen, CheckCircle } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { useStore } from '@/lib/store';
 import { useUser } from '@/hooks/useUser';
 
 export default function DashboardPage() {
-  const { patients = [], appointments = [] } = useStore();
+  const { patients = [], appointments = [], dailyCareRecords = [] } = useStore();
   const user = useUser();
   const name = user?.user_metadata?.full_name || user?.email || 'there';
 
   const today = new Date().toISOString().split('T')[0];
-  
-  // Safety checks with default empty arrays
-  const todayAppointments = appointments?.filter((a) => a.date === today) || [];
-  const completedToday = todayAppointments?.filter((a) => a.status === 'completed').length || 0;
+
+  const todayAppointments  = appointments?.filter((a) => a.date === today) || [];
+  const completedToday     = todayAppointments?.filter((a) => a.status === 'completed').length || 0;
+  const todayCareRecords   = dailyCareRecords?.filter((r) => r.date === today).length || 0;
 
   const stats = [
     {
@@ -33,11 +33,10 @@ export default function DashboardPage() {
       trend: { value: 8, isPositive: true },
     },
     {
-      title: 'Pending Records',
-      value: 5,
-      icon: FileText,
+      title: 'Care Records Today',
+      value: todayCareRecords,
+      icon: BookOpen,
       color: 'yellow' as const,
-      trend: { value: 3, isPositive: false },
     },
     {
       title: 'Completed Today',

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"[Windows.Security.Credentials.PasswordVault,Windows.Security.Credentials,ContentType=WindowsRuntime]; $vault = New-Object Windows.Security.Credentials.PasswordVault; $vault.FindAllByResource\\(''supabase''\\) | ForEach-Object { $_.RetrievePassword\\(\\); $_ } 2>&1\")"
+    ]
+  }
+}

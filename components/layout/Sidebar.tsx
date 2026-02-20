@@ -11,15 +11,20 @@ import {
   LogOut,
   Heart,
   ChevronRight,
+  ClipboardList,
+  BookOpen,
+  UserCog,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
+import { useStore } from '@/lib/store';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useUser();
+  const clinicName = useStore((s) => s.clinicName);
 
   const fullName = user?.user_metadata?.full_name || user?.email || 'User';
   const initials = fullName
@@ -40,6 +45,9 @@ export default function Sidebar() {
     { name: 'Patients', href: '/patients', icon: Users },
     { name: 'Appointments', href: '/appointments', icon: Calendar },
     { name: 'Medical Records', href: '/records', icon: FileText },
+    { name: 'Care Plans', href: '/care-plans', icon: ClipboardList },
+    { name: 'Daily Records', href: '/daily-records', icon: BookOpen },
+    { name: 'Staff', href: '/staff', icon: UserCog },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -53,7 +61,10 @@ export default function Sidebar() {
           </div>
           <div>
             <span className="text-xl font-bold text-gray-800 dark:text-white">Carevity</span>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Healthcare Management</p>
+            {clinicName
+              ? <p className="text-xs text-sky-600 font-medium truncate">{clinicName}</p>
+              : <p className="text-xs text-gray-500 dark:text-gray-400">Healthcare Management</p>
+            }
           </div>
         </Link>
       </div>

@@ -30,11 +30,25 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const protectedPaths = ['/dashboard', '/patients', '/appointments', '/records', '/settings']
+  const protectedPaths = ['/dashboard', '/patients', '/appointments', '/records', '/settings', '/setup', '/care-plans', '/daily-records', '/staff', '/onboarding']
   const isProtected = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // If authenticated and needs onboarding, redirect to /onboarding
+  if (user && user.user_metadata?.needs_onboarding === true) {
+    if (!request.nextUrl.pathname.startsWith('/onboarding')) {
+      return NextResponse.redirect(new URL('/onboarding', request.url))
+    }
+  }
+
+  // If authenticated but no clinic set up, redirect to /setup
+  if (user && !user.user_metadata?.clinic_id) {
+    if (!request.nextUrl.pathname.startsWith('/setup')) {
+      return NextResponse.redirect(new URL('/setup', request.url))
+    }
   }
 
   return supabaseResponse
