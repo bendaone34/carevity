@@ -33,7 +33,7 @@ export default function SetupPage() {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ clinic_id: clinic.id, is_onboarded: true })
+        .update({ clinic_id: clinic.id, is_onboarded: true, role: 'admin' })
         .eq('id', user.id);
       if (profileError) throw profileError;
 

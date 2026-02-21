@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     );
 
     const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
+      redirectTo: `${(process.env.NEXT_PUBLIC_SITE_URL ?? '').trim()}/auth/confirm`,
       data: {
         full_name:        fullName,
         role:             role,

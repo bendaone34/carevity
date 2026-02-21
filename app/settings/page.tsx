@@ -6,6 +6,8 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { useTheme } from '@/context/ThemeContext';
+import { createClient } from '@/lib/supabase/client';
+import toast from 'react-hot-toast';
 import {
   User,
   Bell,
@@ -22,6 +24,25 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Profile state
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profile, setProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    jobTitle: '',
+  });
+
+  // Password state
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwords, setPasswords] = useState({
+    current: '',
+    next: '',
+    confirm: '',
+  });
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -44,11 +65,103 @@ export default function SettingsPage() {
     compactMode: false,
   });
 
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState('en-gb');
+
+  // Load real profile on mount
+  useEffect(() => {
+    async function loadProfile() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('full_name, email, phone, job_title')
+        .eq('id', user.id)
+        .single();
+
+      const fullName = prof?.full_name ?? '';
+      const spaceIdx = fullName.indexOf(' ');
+      const firstName = spaceIdx >= 0 ? fullName.slice(0, spaceIdx) : fullName;
+      const lastName  = spaceIdx >= 0 ? fullName.slice(spaceIdx + 1) : '';
+
+      setProfile({
+        firstName,
+        lastName,
+        email: prof?.email ?? user.email ?? '',
+        phone: prof?.phone ?? '',
+        jobTitle: prof?.job_title ?? '',
+      });
+      setProfileLoading(false);
+    }
+    loadProfile();
+  }, []);
+
+  async function saveProfile() {
+    setProfileSaving(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+
+      const fullName = [profile.firstName.trim(), profile.lastName.trim()]
+        .filter(Boolean)
+        .join(' ');
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          phone: profile.phone || null,
+          job_title: profile.jobTitle || null,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      // Also update auth metadata so the name shows correctly in the header
+      await supabase.auth.updateUser({ data: { full_name: fullName } });
+
+      toast.success('Profile saved');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save profile');
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  async function savePassword() {
+    if (passwords.next !== passwords.confirm) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwords.next.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: passwords.next });
+      if (error) throw error;
+      setPasswords({ current: '', next: '', confirm: '' });
+      toast.success('Password updated');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update password');
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
 
   const toggleNotification = (key: keyof typeof notifications) => {
     setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // Derive initials from real name
+  const initials = [profile.firstName[0], profile.lastName[0]]
+    .filter(Boolean)
+    .join('')
+    .toUpperCase() || '?';
 
   return (
     <div className="animate-fadeIn">
@@ -83,47 +196,73 @@ export default function SettingsPage() {
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
                 Profile Information
               </h3>
-              <div className="flex items-center gap-6 mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-2xl">DS</span>
+
+              {profileLoading ? (
+                <div className="space-y-4 animate-pulse">
+                  <div className="flex items-center gap-6 mb-6">
+                    <div className="w-20 h-20 bg-gray-200 dark:bg-slate-700 rounded-full" />
+                    <div className="h-8 w-32 bg-gray-200 dark:bg-slate-700 rounded" />
+                  </div>
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-10 bg-gray-100 dark:bg-slate-700 rounded-lg" />
+                  ))}
                 </div>
-                <div>
-                  <Button variant="secondary" size="sm">
-                    Change Photo
-                  </Button>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    JPG, GIF or PNG. Max size 2MB
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label="First Name" defaultValue="Emily" />
-                <Input label="Last Name" defaultValue="Smith" />
-                <Input
-                  label="Email"
-                  type="email"
-                  defaultValue="dr.smith@carevity.com"
-                />
-                <Input label="Phone" defaultValue="(555) 123-4567" />
-                <Input label="Specialty" defaultValue="General Medicine" />
-                <Input label="License Number" defaultValue="MD-12345678" />
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Bio
-                  </label>
-                  <textarea
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all duration-200 bg-white dark:bg-slate-800 dark:text-white resize-none"
-                    rows={3}
-                    defaultValue="Board certified physician with over 10 years of experience in general medicine and patient care."
-                  />
-                </div>
-              </div>
-              <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 flex justify-end">
-                <Button>
-                  <Save className="w-4 h-4" />
-                  Save Changes
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-6 mb-6">
+                    <div className="w-20 h-20 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center shrink-0">
+                      <span className="text-white font-bold text-2xl">{initials}</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800 dark:text-white">
+                        {[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Your Name'}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{profile.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="First Name"
+                      value={profile.firstName}
+                      onChange={(e) => setProfile((p) => ({ ...p, firstName: e.target.value }))}
+                    />
+                    <Input
+                      label="Last Name"
+                      value={profile.lastName}
+                      onChange={(e) => setProfile((p) => ({ ...p, lastName: e.target.value }))}
+                    />
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={profile.email}
+                      disabled
+                      className="opacity-60 cursor-not-allowed"
+                    />
+                    <Input
+                      label="Phone"
+                      value={profile.phone}
+                      onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                      placeholder="e.g. 07700 900000"
+                    />
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Job Title"
+                        value={profile.jobTitle}
+                        onChange={(e) => setProfile((p) => ({ ...p, jobTitle: e.target.value }))}
+                        placeholder="e.g. Care Home Manager"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 flex justify-end">
+                    <Button onClick={saveProfile} disabled={profileSaving}>
+                      <Save className="w-4 h-4" />
+                      {profileSaving ? 'Saving…' : 'Save Changes'}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -209,120 +348,33 @@ export default function SettingsPage() {
                 <div className="space-y-4 max-w-md">
                   <div className="relative">
                     <Input
-                      label="Current Password"
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      placeholder="Enter current password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <Input
                       label="New Password"
                       type={showNewPassword ? 'text' : 'password'}
-                      placeholder="Enter new password"
+                      placeholder="Enter new password (min 8 characters)"
+                      value={passwords.next}
+                      onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
                       className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
                     >
-                      {showNewPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
+                      {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                   <Input
                     label="Confirm New Password"
                     type="password"
                     placeholder="Confirm new password"
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords((p) => ({ ...p, confirm: e.target.value }))}
                   />
                 </div>
                 <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 flex justify-end">
-                  <Button>
+                  <Button onClick={savePassword} disabled={passwordSaving}>
                     <Lock className="w-4 h-4" />
-                    Update Password
+                    {passwordSaving ? 'Updating…' : 'Update Password'}
                   </Button>
-                </div>
-              </div>
-
-              <div className="card">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
-                  Two-Factor Authentication
-                </h3>
-                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-white">
-                      Enable 2FA
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Add an extra layer of security to your account
-                    </p>
-                  </div>
-                  <Button variant="secondary">Setup 2FA</Button>
-                </div>
-              </div>
-
-              <div className="card">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
-                  Active Sessions
-                </h3>
-                <div className="space-y-3">
-                  {[
-                    {
-                      device: 'MacBook Pro - Chrome',
-                      location: 'New York, US',
-                      time: 'Active now',
-                      current: true,
-                    },
-                    {
-                      device: 'iPhone 14 - Safari',
-                      location: 'New York, US',
-                      time: '2 hours ago',
-                      current: false,
-                    },
-                    {
-                      device: 'Windows PC - Firefox',
-                      location: 'Boston, US',
-                      time: '3 days ago',
-                      current: false,
-                    },
-                  ].map((session, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-800 flex items-center gap-2">
-                          {session.device}
-                          {session.current && (
-                            <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
-                              Current
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {session.location} • {session.time}
-                        </p>
-                      </div>
-                      {!session.current && (
-                        <Button variant="ghost" size="sm">
-                          Revoke
-                        </Button>
-                      )}
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
@@ -385,8 +437,7 @@ export default function SettingsPage() {
                         onClick={() =>
                           setAppearance((prev) => ({
                             ...prev,
-                            [item.key]:
-                              !prev[item.key as keyof typeof appearance],
+                            [item.key]: !prev[item.key as keyof typeof appearance],
                           }))
                         }
                         className={`relative w-12 h-6 rounded-full transition-colors ${
@@ -428,39 +479,36 @@ export default function SettingsPage() {
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
                   options={[
-                    { value: 'en', label: 'English (US)' },
                     { value: 'en-gb', label: 'English (UK)' },
+                    { value: 'en', label: 'English (US)' },
                     { value: 'es', label: 'Spanish' },
                     { value: 'fr', label: 'French' },
                     { value: 'de', label: 'German' },
                     { value: 'pt', label: 'Portuguese' },
-                    { value: 'zh', label: 'Chinese' },
-                    { value: 'ja', label: 'Japanese' },
                   ]}
                 />
                 <Select
                   label="Timezone"
                   options={[
-                    { value: 'est', label: 'Eastern Time (ET)' },
-                    { value: 'cst', label: 'Central Time (CT)' },
-                    { value: 'mst', label: 'Mountain Time (MT)' },
-                    { value: 'pst', label: 'Pacific Time (PT)' },
                     { value: 'utc', label: 'UTC' },
+                    { value: 'europe-london', label: 'Europe/London (GMT/BST)' },
+                    { value: 'est', label: 'Eastern Time (ET)' },
+                    { value: 'pst', label: 'Pacific Time (PT)' },
                   ]}
                 />
                 <Select
                   label="Date Format"
                   options={[
-                    { value: 'mdy', label: 'MM/DD/YYYY' },
                     { value: 'dmy', label: 'DD/MM/YYYY' },
+                    { value: 'mdy', label: 'MM/DD/YYYY' },
                     { value: 'ymd', label: 'YYYY-MM-DD' },
                   ]}
                 />
                 <Select
                   label="Time Format"
                   options={[
-                    { value: '12h', label: '12-hour (AM/PM)' },
                     { value: '24h', label: '24-hour' },
+                    { value: '12h', label: '12-hour (AM/PM)' },
                   ]}
                 />
               </div>

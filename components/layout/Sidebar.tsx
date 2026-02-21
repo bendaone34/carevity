@@ -14,17 +14,27 @@ import {
   ClipboardList,
   BookOpen,
   UserCog,
+  BarChart2,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
 import { useStore } from '@/lib/store';
+import { StaffMember } from '@/lib/types';
+
+type MenuItem = {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  roles?: Array<StaffMember['role']>;
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useUser();
   const clinicName = useStore((s) => s.clinicName);
+  const currentUserRole = useStore((s) => s.currentUserRole);
 
   const fullName = user?.user_metadata?.full_name || user?.email || 'User';
   const initials = fullName
@@ -40,19 +50,20 @@ export default function Sidebar() {
     router.push('/auth/login');
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Patients', href: '/patients', icon: Users },
     { name: 'Appointments', href: '/appointments', icon: Calendar },
     { name: 'Medical Records', href: '/records', icon: FileText },
     { name: 'Care Plans', href: '/care-plans', icon: ClipboardList },
     { name: 'Daily Records', href: '/daily-records', icon: BookOpen },
+    { name: 'Reports', href: '/reports', icon: BarChart2, roles: ['admin', 'manager'] },
     { name: 'Staff', href: '/staff', icon: UserCog },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   return (
-    <aside className="w-64 bg-white dark:bg-slate-800 h-screen fixed left-0 top-0 border-r border-gray-200 dark:border-slate-700 flex flex-col z-40 transition-colors duration-300">
+    <aside className="w-64 bg-white dark:bg-slate-800 h-screen fixed left-0 top-0 border-r border-gray-200 dark:border-slate-700 flex flex-col z-40 transition-colors duration-300 print:hidden">
       {/* Logo */}
       <div className="p-6 border-b border-gray-100 dark:border-slate-700">
         <Link href="/dashboard" className="flex items-center gap-3">
@@ -72,7 +83,9 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-1">
-          {menuItems.map((item) => {
+          {menuItems
+            .filter((item) => !item.roles || currentUserRole === null || item.roles.includes(currentUserRole))
+            .map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             const IconComponent = item.icon;
             return (
