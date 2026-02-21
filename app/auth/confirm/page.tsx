@@ -42,36 +42,22 @@ function ConfirmInner() {
         await redirect(user);
 
       } else {
-        // Implicit flow — tokens in URL hash fragment.
-        // The Supabase browser client picks up the fragment automatically and
-        // fires SIGNED_IN on onAuthStateChange.
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Fragment already processed before this ran
+        // Implicit flow — access_token in URL hash fragment.
+        // Parse it manually so we always use the INVITE session, not whatever
+        // session was already active in the browser (e.g. admin still logged in).
+        const hash   = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken  = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (error) { setErrorMsg(error.message); return; }
           const { data: { user } } = await supabase.auth.getUser();
           await redirect(user);
-          return;
-        }
-
-        // Wait for the client to parse the fragment
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (event === 'SIGNED_IN' && session) {
-            subscription.unsubscribe();
-            const { data: { user } } = await supabase.auth.getUser();
-            await redirect(user);
-          }
-        });
-
-        // Safety timeout — if nothing fires after 8 s, show an error
-        const timeout = setTimeout(() => {
-          subscription.unsubscribe();
+        } else {
           setErrorMsg('This invite link has expired or is invalid. Please ask your admin to re-invite you.');
-        }, 8000);
-
-        return () => {
-          subscription.unsubscribe();
-          clearTimeout(timeout);
-        };
+        }
       }
     }
 
