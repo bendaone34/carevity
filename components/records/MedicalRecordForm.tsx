@@ -84,7 +84,6 @@ export default function MedicalRecordForm({ record, onClose }: MedicalRecordForm
       onClose();
     } catch (error) {
       toast.error('Failed to save record. Please try again.');
-      console.error(error);
     } finally {
       setIsLoading(false);
     }

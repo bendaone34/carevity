@@ -22,7 +22,6 @@ import {
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Profile state
@@ -52,20 +51,44 @@ export default function SettingsPage() {
     { id: 'language', label: 'Language', icon: Globe },
   ];
 
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: true,
-    sms: false,
-    reminders: true,
-    weekly: false,
+  const [notifications, setNotifications] = useState<{ email: boolean; push: boolean; sms: boolean; reminders: boolean; weekly: boolean }>(() => {
+    try {
+      const stored = localStorage.getItem('carevity:notifications');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return { email: true, push: true, sms: false, reminders: true, weekly: false };
   });
 
-  const [appearance, setAppearance] = useState({
-    sidebarCollapsed: false,
-    compactMode: false,
+  const [appearance, setAppearance] = useState<{ sidebarCollapsed: boolean; compactMode: boolean }>(() => {
+    try {
+      const stored = localStorage.getItem('carevity:appearance');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return { sidebarCollapsed: false, compactMode: false };
   });
 
-  const [language, setLanguage] = useState('en-gb');
+  const [language, setLanguage] = useState(() => {
+    try {
+      return localStorage.getItem('carevity:language') ?? 'en-gb';
+    } catch {}
+    return 'en-gb';
+  });
+
+  const [prefsSaving, setPrefsSaving] = useState(false);
+
+  function savePreferences(type: 'notifications' | 'appearance' | 'language') {
+    setPrefsSaving(true);
+    try {
+      if (type === 'notifications') localStorage.setItem('carevity:notifications', JSON.stringify(notifications));
+      if (type === 'appearance')    localStorage.setItem('carevity:appearance',    JSON.stringify(appearance));
+      if (type === 'language')      localStorage.setItem('carevity:language',      language);
+      toast.success('Preferences saved');
+    } catch {
+      toast.error('Failed to save preferences');
+    } finally {
+      setPrefsSaving(false);
+    }
+  }
 
   // Load real profile on mount
   useEffect(() => {
@@ -330,7 +353,7 @@ export default function SettingsPage() {
                 ))}
               </div>
               <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 flex justify-end">
-                <Button>
+                <Button onClick={() => savePreferences('notifications')} disabled={prefsSaving}>
                   <Save className="w-4 h-4" />
                   Save Preferences
                 </Button>
@@ -459,7 +482,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 flex justify-end">
-                <Button>
+                <Button onClick={() => savePreferences('appearance')} disabled={prefsSaving}>
                   <Save className="w-4 h-4" />
                   Save Preferences
                 </Button>
@@ -513,7 +536,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 flex justify-end">
-                <Button>
+                <Button onClick={() => savePreferences('language')} disabled={prefsSaving}>
                   <Save className="w-4 h-4" />
                   Save Preferences
                 </Button>

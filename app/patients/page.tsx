@@ -6,6 +6,7 @@ import PatientCard from '@/components/patients/PatientCard';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { useStore } from '@/lib/store';
+import Link from 'next/link';
 import { Search, Users } from 'lucide-react';
 
 export default function PatientsPage() {
@@ -113,9 +114,17 @@ export default function PatientsPage() {
           <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">
             {searchQuery ? 'No patients found' : 'No patients yet'}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
             {searchQuery ? 'Try adjusting your search or filter criteria' : 'Add your first patient to get started'}
           </p>
+          {!searchQuery && (
+            <Link
+              href="/patients/new"
+              className="inline-flex items-center px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
+            >
+              Add first patient
+            </Link>
+          )}
         </div>
       )}
     </div>

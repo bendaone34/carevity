@@ -15,6 +15,8 @@ import {
   BookOpen,
   UserCog,
   BarChart2,
+  Pill,
+  AlertTriangle,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { useUser } from '@/hooks/useUser';
@@ -35,6 +37,10 @@ export default function Sidebar() {
   const user = useUser();
   const clinicName = useStore((s) => s.clinicName);
   const currentUserRole = useStore((s) => s.currentUserRole);
+  const incidents = useStore((s) => s.incidents);
+  const openCritical = incidents.filter(
+    (i) => i.severity === 'critical' && i.status !== 'resolved'
+  ).length;
 
   const fullName = user?.user_metadata?.full_name || user?.email || 'User';
   const initials = fullName
@@ -57,6 +63,8 @@ export default function Sidebar() {
     { name: 'Medical Records', href: '/records', icon: FileText },
     { name: 'Care Plans', href: '/care-plans', icon: ClipboardList },
     { name: 'Daily Records', href: '/daily-records', icon: BookOpen },
+    { name: 'Medications', href: '/medications', icon: Pill },
+    { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
     { name: 'Reports', href: '/reports', icon: BarChart2, roles: ['admin', 'manager'] },
     { name: 'Staff', href: '/staff', icon: UserCog },
     { name: 'Settings', href: '/settings', icon: Settings },
@@ -109,6 +117,11 @@ export default function Sidebar() {
                     <span className="font-medium">{item.name}</span>
                   </div>
                   {isActive && <ChevronRight className="w-4 h-4" />}
+                  {!isActive && item.name === 'Incidents' && openCritical > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-bold bg-red-500 text-white rounded-full">
+                      {openCritical > 9 ? '9+' : openCritical}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

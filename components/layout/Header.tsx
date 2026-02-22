@@ -3,6 +3,8 @@
 import { Bell, Search, Plus } from 'lucide-react';
 import Link from 'next/link';
 import ThemeSwitcher from '@/components/ui/ThemeSwitcher';
+import { useStore } from '@/lib/store';
+import { useMemo } from 'react';
 
 interface HeaderProps {
   title: string;
@@ -21,6 +23,24 @@ export default function Header({
   addButtonHref,
   onAddClick,
 }: HeaderProps) {
+  const incidents      = useStore((s) => s.incidents);
+  const medications    = useStore((s) => s.medications);
+  const medicationLogs = useStore((s) => s.medicationLogs);
+
+  const notificationCount = useMemo(() => {
+    const todayISO = new Date().toISOString().split('T')[0];
+    const loggedTodayIds = new Set(
+      medicationLogs.filter((l) => l.date === todayISO && !l.refused).map((l) => l.medicationId)
+    );
+    const unloggedToday = medications.filter(
+      (m) => m.status === 'active' && !loggedTodayIds.has(m.id)
+    ).length;
+    const openCritical = incidents.filter(
+      (i) => i.severity === 'critical' && i.status !== 'resolved'
+    ).length;
+    return openCritical + unloggedToday;
+  }, [incidents, medications, medicationLogs]);
+
   return (
     <header className="flex items-center justify-between mb-8">
       <div>
@@ -42,12 +62,18 @@ export default function Header({
         <ThemeSwitcher />
 
         {/* Notifications */}
-        <button className="relative p-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        <Link
+          href="/incidents"
+          className="relative p-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+          title={notificationCount > 0 ? `${notificationCount} alert${notificationCount > 1 ? 's' : ''} require attention` : 'No alerts'}
+        >
           <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-            3
-          </span>
-        </button>
+          {notificationCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+              {notificationCount > 9 ? '9+' : notificationCount}
+            </span>
+          )}
+        </Link>
 
         {/* Add Button */}
         {showAddButton && addButtonHref && (
@@ -59,7 +85,7 @@ export default function Header({
             {addButtonText}
           </Link>
         )}
-        
+
         {showAddButton && !addButtonHref && onAddClick && (
           <button
             onClick={onAddClick}

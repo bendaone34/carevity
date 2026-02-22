@@ -98,7 +98,6 @@ export default function PatientForm({ patient, onClose }: PatientFormProps) {
       }
     } catch (error) {
       toast.error('Failed to save patient. Please try again.');
-      console.error(error);
     } finally {
       setIsLoading(false);
     }

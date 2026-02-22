@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember } from './types';
+import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident } from './types';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── DB → TS mappers ─────────────────────────────────────────────────────────
@@ -216,6 +216,67 @@ function medicalRecordToDb(r: Omit<MedicalRecord, 'id' | 'patientName'>) {
   };
 }
 
+function mapMedication(row: Record<string, unknown>): Medication {
+  const patient = row.patients as { first_name: string; last_name: string } | null;
+  return {
+    id:                row.id as string,
+    patientId:         row.patient_id as string,
+    patientName:       patient ? `${patient.first_name} ${patient.last_name}` : '',
+    name:              row.name as string,
+    dosage:            row.dosage as string,
+    frequency:         row.frequency as string,
+    route:             row.route as string,
+    prescribingDoctor: (row.prescribing_doctor as string) ?? '',
+    startDate:         row.start_date as string,
+    endDate:           row.end_date as string | undefined,
+    instructions:      row.instructions as string | undefined,
+    status:            row.status as Medication['status'],
+    createdAt:         ((row.created_at as string) || '').split('T')[0],
+  };
+}
+
+function mapMedicationLog(row: Record<string, unknown>): MedicationLog {
+  const patient = row.patients   as { first_name: string; last_name: string } | null;
+  const med     = row.medications as { name: string } | null;
+  return {
+    id:             row.id as string,
+    medicationId:   row.medication_id as string,
+    patientId:      row.patient_id as string,
+    patientName:    patient ? `${patient.first_name} ${patient.last_name}` : '',
+    medicationName: med?.name ?? '',
+    date:           row.date as string,
+    time:           row.time as string,
+    givenBy:        row.given_by as string,
+    notes:          row.notes as string | undefined,
+    refused:        (row.refused as boolean) ?? false,
+    createdAt:      ((row.created_at as string) || '').split('T')[0],
+  };
+}
+
+function mapIncident(row: Record<string, unknown>): Incident {
+  const patient = row.patients as { first_name: string; last_name: string } | null;
+  return {
+    id:              row.id as string,
+    patientId:       row.patient_id as string,
+    patientName:     patient ? `${patient.first_name} ${patient.last_name}` : '',
+    reportedBy:      row.reported_by as string,
+    reportedById:    row.reported_by_id as string,
+    date:            row.date as string,
+    time:            row.time as string,
+    incidentType:    row.incident_type as Incident['incidentType'],
+    location:        (row.location as string) ?? '',
+    description:     row.description as string,
+    immediateAction: row.immediate_action as string,
+    witnesses:       (row.witnesses as string) ?? '',
+    severity:        row.severity as Incident['severity'],
+    followUp:        (row.follow_up as boolean) ?? false,
+    followUpNotes:   (row.follow_up_notes as string) ?? '',
+    status:          row.status as Incident['status'],
+    internalNotes:   (row.internal_notes as string) ?? '',
+    createdAt:       ((row.created_at as string) || '').split('T')[0],
+  };
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface AppState {
@@ -279,6 +340,25 @@ interface AppState {
   updateCarePlan: (id: string, plan: Partial<Omit<CarePlan, 'tasks'>>) => Promise<void>;
   deleteCarePlan: (id: string) => Promise<void>;
   updateCarePlanTask: (taskId: string, status: CarePlanTask['status']) => Promise<void>;
+
+  // Medications
+  medications: Medication[];
+  fetchMedications: () => Promise<void>;
+  addMedication: (med: Omit<Medication, 'id' | 'createdAt' | 'patientName'>) => Promise<void>;
+  updateMedication: (id: string, updates: Partial<Omit<Medication, 'patientName'>>) => Promise<void>;
+  deleteMedication: (id: string) => Promise<void>;
+
+  // Medication Logs
+  medicationLogs: MedicationLog[];
+  fetchMedicationLogs: () => Promise<void>;
+  addMedicationLog: (log: Omit<MedicationLog, 'id' | 'createdAt' | 'patientName' | 'medicationName'>) => Promise<void>;
+
+  // Incidents
+  incidents: Incident[];
+  fetchIncidents: () => Promise<void>;
+  addIncident: (inc: Omit<Incident, 'id' | 'createdAt' | 'patientName'>) => Promise<void>;
+  updateIncident: (id: string, updates: Partial<Omit<Incident, 'patientName'>>) => Promise<void>;
+  deleteIncident: (id: string) => Promise<void>;
 
   // Search
   searchQuery: string;
@@ -707,6 +787,185 @@ export const useStore = create<AppState>((set, get) => ({
         tasks: cp.tasks.map((t) => (t.id === taskId ? mapCarePlanTask(data) : t)),
       })),
     }));
+  },
+
+  // ─── Medications ───────────────────────────────────────────────────────────
+
+  medications: [],
+
+  fetchMedications: async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('medications')
+      .select('*, patients(first_name, last_name)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    set({ medications: (data ?? []).map(mapMedication) });
+  },
+
+  addMedication: async (med) => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('medications')
+      .insert({
+        clinic_id:         get().clinicId,
+        patient_id:        med.patientId,
+        name:              med.name,
+        dosage:            med.dosage,
+        frequency:         med.frequency,
+        route:             med.route,
+        prescribing_doctor: med.prescribingDoctor,
+        start_date:        med.startDate,
+        end_date:          med.endDate || null,
+        instructions:      med.instructions || null,
+        status:            med.status,
+      })
+      .select('*, patients(first_name, last_name)')
+      .single();
+    if (error) throw error;
+    set((state) => ({ medications: [mapMedication(data), ...state.medications] }));
+  },
+
+  updateMedication: async (id, updates) => {
+    const supabase = createClient();
+    const existing = get().medications.find((m) => m.id === id);
+    if (!existing) return;
+    const merged = { ...existing, ...updates };
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name              !== undefined) dbUpdates.name               = merged.name;
+    if (updates.dosage            !== undefined) dbUpdates.dosage             = merged.dosage;
+    if (updates.frequency         !== undefined) dbUpdates.frequency          = merged.frequency;
+    if (updates.route             !== undefined) dbUpdates.route              = merged.route;
+    if (updates.prescribingDoctor !== undefined) dbUpdates.prescribing_doctor = merged.prescribingDoctor;
+    if (updates.startDate         !== undefined) dbUpdates.start_date         = merged.startDate;
+    if (updates.endDate           !== undefined) dbUpdates.end_date           = merged.endDate || null;
+    if (updates.instructions      !== undefined) dbUpdates.instructions       = merged.instructions || null;
+    if (updates.status            !== undefined) dbUpdates.status             = merged.status;
+    const { data, error } = await supabase
+      .from('medications')
+      .update(dbUpdates)
+      .eq('id', id)
+      .select('*, patients(first_name, last_name)')
+      .single();
+    if (error) throw error;
+    set((state) => ({
+      medications: state.medications.map((m) => (m.id === id ? mapMedication(data) : m)),
+    }));
+  },
+
+  deleteMedication: async (id) => {
+    const supabase = createClient();
+    const { error } = await supabase.from('medications').delete().eq('id', id);
+    if (error) throw error;
+    set((state) => ({
+      medications:    state.medications.filter((m) => m.id !== id),
+      medicationLogs: state.medicationLogs.filter((l) => l.medicationId !== id),
+    }));
+  },
+
+  // ─── Medication Logs ───────────────────────────────────────────────────────
+
+  medicationLogs: [],
+
+  fetchMedicationLogs: async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('medication_logs')
+      .select('*, patients(first_name, last_name), medications(name)')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    set({ medicationLogs: (data ?? []).map(mapMedicationLog) });
+  },
+
+  addMedicationLog: async (log) => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('medication_logs')
+      .insert({
+        clinic_id:     get().clinicId,
+        medication_id: log.medicationId,
+        patient_id:    log.patientId,
+        date:          log.date,
+        time:          log.time,
+        given_by:      log.givenBy,
+        notes:         log.notes || null,
+        refused:       log.refused,
+      })
+      .select('*, patients(first_name, last_name), medications(name)')
+      .single();
+    if (error) throw error;
+    set((state) => ({ medicationLogs: [mapMedicationLog(data), ...state.medicationLogs] }));
+  },
+
+  // ─── Incidents ─────────────────────────────────────────────────────────────
+
+  incidents: [],
+
+  fetchIncidents: async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*, patients(first_name, last_name)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    set({ incidents: (data ?? []).map(mapIncident) });
+  },
+
+  addIncident: async (inc) => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('incidents')
+      .insert({
+        clinic_id:        get().clinicId,
+        patient_id:       inc.patientId,
+        reported_by:      inc.reportedBy,
+        reported_by_id:   inc.reportedById,
+        date:             inc.date,
+        time:             inc.time,
+        incident_type:    inc.incidentType,
+        location:         inc.location || null,
+        description:      inc.description,
+        immediate_action: inc.immediateAction,
+        witnesses:        inc.witnesses || null,
+        severity:         inc.severity,
+        follow_up:        inc.followUp,
+        follow_up_notes:  inc.followUpNotes || null,
+        status:           inc.status,
+        internal_notes:   inc.internalNotes || null,
+      })
+      .select('*, patients(first_name, last_name)')
+      .single();
+    if (error) throw error;
+    set((state) => ({ incidents: [mapIncident(data), ...state.incidents] }));
+  },
+
+  updateIncident: async (id, updates) => {
+    const supabase = createClient();
+    const existing = get().incidents.find((i) => i.id === id);
+    if (!existing) return;
+    const merged = { ...existing, ...updates };
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.status        !== undefined) dbUpdates.status         = merged.status;
+    if (updates.internalNotes !== undefined) dbUpdates.internal_notes = merged.internalNotes || null;
+    if (updates.followUpNotes !== undefined) dbUpdates.follow_up_notes = merged.followUpNotes || null;
+    if (updates.followUp      !== undefined) dbUpdates.follow_up      = merged.followUp;
+    const { data, error } = await supabase
+      .from('incidents')
+      .update(dbUpdates)
+      .eq('id', id)
+      .select('*, patients(first_name, last_name)')
+      .single();
+    if (error) throw error;
+    set((state) => ({
+      incidents: state.incidents.map((i) => (i.id === id ? mapIncident(data) : i)),
+    }));
+  },
+
+  deleteIncident: async (id) => {
+    const supabase = createClient();
+    const { error } = await supabase.from('incidents').delete().eq('id', id);
+    if (error) throw error;
+    set((state) => ({ incidents: state.incidents.filter((i) => i.id !== id) }));
   },
 
   // ─── Search ────────────────────────────────────────────────────────────────

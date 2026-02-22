@@ -46,7 +46,7 @@ function getInitials(firstName: string, lastName: string): string {
 export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { patients, deletePatient, appointments, medicalRecords } = useStore();
+  const { patients, deletePatient, appointments, medicalRecords, medications } = useStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const patientId = params.id as string;
@@ -75,6 +75,7 @@ export default function PatientDetailPage() {
 
   const patientAppointments = appointments.filter((a) => a.patientId === patient.id);
   const patientRecords = medicalRecords.filter((r) => r.patientId === patient.id);
+  const patientMedications = medications.filter((m) => m.patientId === patient.id && m.status === 'active');
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this patient?')) {
@@ -336,6 +337,51 @@ export default function PatientDetailPage() {
             <p className="text-gray-500 dark:text-gray-400 text-center py-4">No records</p>
           )}
         </div>
+      </div>
+
+      {/* Current Medications */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Current Medications</h3>
+          <Link
+            href="/medications"
+            className="text-sky-600 dark:text-sky-400 text-sm hover:underline"
+          >
+            View all
+          </Link>
+        </div>
+        {patientMedications.length === 0 ? (
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">No active medications</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-slate-700">
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400">Name</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400">Dosage</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400">Frequency</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400">Route</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
+                {patientMedications.slice(0, 5).map((med) => (
+                  <tr key={med.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                    <td className="py-2 px-3 font-medium text-gray-800 dark:text-white">{med.name}</td>
+                    <td className="py-2 px-3 text-gray-600 dark:text-gray-300">{med.dosage}</td>
+                    <td className="py-2 px-3 text-gray-600 dark:text-gray-300 capitalize">{med.frequency}</td>
+                    <td className="py-2 px-3 text-gray-600 dark:text-gray-300 capitalize">{med.route}</td>
+                    <td className="py-2 px-3">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                        Active
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Edit Patient Modal */}

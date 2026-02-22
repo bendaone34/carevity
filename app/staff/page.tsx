@@ -52,8 +52,8 @@ export default function StaffPage() {
       await removeStaff(member.id);
       toast.success('Staff member removed');
       if (selectedMember?.id === member.id) setSelectedMember(null);
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to remove staff');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remove staff');
     }
   };
 

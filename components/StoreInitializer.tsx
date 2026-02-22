@@ -8,6 +8,7 @@ export default function StoreInitializer() {
   const {
     fetchPatients, fetchAppointments, fetchMedicalRecords,
     fetchCarePlans, fetchDailyCareRecords, fetchStaff,
+    fetchMedications, fetchMedicationLogs, fetchIncidents,
     setLoading, setClinic, setCurrentUserRole,
   } = useStore();
 
@@ -34,6 +35,7 @@ export default function StoreInitializer() {
       await Promise.all([
         fetchPatients(), fetchAppointments(), fetchMedicalRecords(),
         fetchCarePlans(), fetchDailyCareRecords(), fetchStaff(),
+        fetchMedications(), fetchMedicationLogs(), fetchIncidents(),
       ]).finally(() => setLoading(false));
     };
 

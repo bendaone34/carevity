@@ -32,9 +32,6 @@ function getInitials(firstName: string, lastName: string): string {
 }
 
 export default function PatientCard({ patient }: PatientCardProps) {
-  // Debug log
-  console.log('PatientCard - Patient ID:', patient.id, 'Link:', `/patients/${patient.id}`);
-
   return (
     <Link href={`/patients/${patient.id}`}>
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-md hover:border-gray-200 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer">
@@ -67,9 +64,6 @@ export default function PatientCard({ patient }: PatientCardProps) {
                 </span>
               </div>
             </div>
-
-            {/* Debug: Show patient ID */}
-            <p className="text-xs text-gray-400 mt-2">ID: {patient.id}</p>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {patient.bloodType && (

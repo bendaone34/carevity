@@ -81,7 +81,6 @@ export default function NewPatientPage() {
       router.push('/patients');
     } catch (error) {
       toast.error('Failed to save patient. Please try again.');
-      console.error(error);
     } finally {
       setIsLoading(false);
     }

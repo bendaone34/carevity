@@ -1,11 +1,12 @@
 'use client';
 
-import { Users, Calendar, ClipboardList, CheckCircle } from 'lucide-react';
+import { Users, Calendar, ClipboardList, CheckCircle, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { useUser } from '@/hooks/useUser';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useStore } from '@/lib/store';
 
 // ─── Skeletons ────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,18 @@ export default function DashboardPage() {
     trends, todayAppointmentsList, recentPatients, isLoading,
   } = useDashboardStats();
 
+  const medications    = useStore((s) => s.medications);
+  const medicationLogs = useStore((s) => s.medicationLogs);
+  const incidents      = useStore((s) => s.incidents);
+  const openCriticalIncidents = incidents.filter(
+    (i) => i.severity === 'critical' && i.status !== 'resolved'
+  );
+  const todayISO = new Date().toISOString().split('T')[0];
+  const loggedTodayIds = new Set(
+    medicationLogs.filter((l) => l.date === todayISO && !l.refused).map((l) => l.medicationId)
+  );
+  const unloggedToday = medications.filter((m) => m.status === 'active' && !loggedTodayIds.has(m.id));
+
   const stats = [
     {
       title: 'Total Patients',
@@ -93,6 +106,25 @@ export default function DashboardPage() {
         subtitle={`Welcome back, ${name}! Here's what's happening today.`}
       />
 
+      {/* Critical incident banner */}
+      {openCriticalIncidents.length > 0 && (
+        <div className="mb-6 flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+              {openCriticalIncidents.length} critical incident{openCriticalIncidents.length > 1 ? 's' : ''} require attention
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+              {openCriticalIncidents.slice(0, 2).map((i) => i.patientName).join(', ')}
+              {openCriticalIncidents.length > 2 ? ` +${openCriticalIncidents.length - 2} more` : ''}
+            </p>
+          </div>
+          <Link href="/incidents" className="text-xs font-medium text-red-700 dark:text-red-300 hover:underline shrink-0">
+            View →
+          </Link>
+        </div>
+      )}
+
       {/* Stats Grid */}
       {isLoading ? (
         <StatsSkeleton />
@@ -105,7 +137,7 @@ export default function DashboardPage() {
       )}
 
       {/* Bottom panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {/* Today's Appointments */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
@@ -178,6 +210,41 @@ export default function DashboardPage() {
             </div>
           ) : (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No patients yet</p>
+          )}
+        </div>
+
+        {/* Medication Alerts */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Medication Alerts</h3>
+            <Link href="/medications" className="text-sky-600 dark:text-sky-400 text-sm hover:underline">
+              View schedule
+            </Link>
+          </div>
+
+          {isLoading ? (
+            <ListSkeleton />
+          ) : unloggedToday.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-green-600 dark:text-green-400 text-sm font-medium">All medications logged today</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {unloggedToday.slice(0, 5).map((med) => (
+                <div key={med.id} className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg">
+                  <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{med.patientName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{med.name} · {med.dosage}</p>
+                  </div>
+                </div>
+              ))}
+              {unloggedToday.length > 5 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center pt-1">
+                  +{unloggedToday.length - 5} more
+                </p>
+              )}
+            </div>
           )}
         </div>
 

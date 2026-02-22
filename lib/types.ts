@@ -111,6 +111,57 @@ export interface CarePlan {
   createdAt: string;
 }
 
+export interface Medication {
+  id: string;
+  patientId: string;
+  patientName: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  prescribingDoctor: string;
+  startDate: string;
+  endDate?: string;
+  instructions?: string;
+  status: 'active' | 'discontinued';
+  createdAt: string;
+}
+
+export interface MedicationLog {
+  id: string;
+  medicationId: string;
+  patientId: string;
+  patientName: string;
+  medicationName: string;
+  date: string;
+  time: string;
+  givenBy: string;
+  notes?: string;
+  refused: boolean;
+  createdAt: string;
+}
+
+export interface Incident {
+  id: string;
+  patientId: string;
+  patientName: string;
+  reportedBy: string;
+  reportedById: string;
+  date: string;
+  time: string;
+  incidentType: 'fall' | 'medication_error' | 'safeguarding' | 'behavioural' | 'accident' | 'near_miss' | 'other';
+  location: string;
+  description: string;
+  immediateAction: string;
+  witnesses: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  followUp: boolean;
+  followUpNotes: string;
+  status: 'open' | 'under_review' | 'resolved';
+  internalNotes: string;
+  createdAt: string;
+}
+
 export interface StaffMember {
   id: string;
   fullName: string;
