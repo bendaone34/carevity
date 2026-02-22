@@ -174,6 +174,18 @@ export interface StaffMember {
   isOnboarded: boolean;
 }
 
+export interface Organisation {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  logoUrl: string;
+  subscriptionTier: 'starter' | 'professional' | 'enterprise';
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   name: string;

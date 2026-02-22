@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Heart, Mail, Lock, Eye, EyeOff, User, CheckCircle } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
 
-export default function SignupPage() {
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const joinClinicId = searchParams.get('join');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +45,10 @@ export default function SignupPage() {
         email: formData.email,
         password: formData.password,
         options: {
-          data: { full_name: formData.name },
+          data: {
+            full_name: formData.name,
+            ...(joinClinicId ? { pending_clinic_id: joinClinicId } : {}),
+          },
         },
       });
 
@@ -203,5 +209,17 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   );
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident } from './types';
+import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident, Organisation } from './types';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── DB → TS mappers ─────────────────────────────────────────────────────────
@@ -277,6 +277,20 @@ function mapIncident(row: Record<string, unknown>): Incident {
   };
 }
 
+function mapOrganisation(row: Record<string, unknown>): Organisation {
+  return {
+    id:               row.id as string,
+    name:             row.name as string,
+    address:          (row.address as string) ?? '',
+    phone:            (row.phone as string) ?? '',
+    email:            (row.email as string) ?? '',
+    logoUrl:          (row.logo_url as string) ?? '',
+    subscriptionTier: (row.subscription_tier as Organisation['subscriptionTier']) ?? 'starter',
+    isActive:         (row.is_active as boolean) ?? true,
+    createdAt:        ((row.created_at as string) || '').split('T')[0],
+  };
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface AppState {
@@ -287,6 +301,11 @@ interface AppState {
   clinicId: string | null;
   clinicName: string | null;
   setClinic: (id: string, name: string) => void;
+
+  // Organisation
+  organisation: Organisation | null;
+  fetchOrganisation: () => Promise<void>;
+  updateOrganisation: (updates: Partial<Pick<Organisation, 'name' | 'address' | 'phone' | 'email'>>) => Promise<void>;
 
   // Patients
   patients: Patient[];
@@ -374,6 +393,44 @@ export const useStore = create<AppState>((set, get) => ({
   clinicId: null,
   clinicName: null,
   setClinic: (id, name) => set({ clinicId: id, clinicName: name }),
+
+  // ─── Organisation ──────────────────────────────────────────────────────────
+
+  organisation: null,
+
+  fetchOrganisation: async () => {
+    const clinicId = get().clinicId;
+    if (!clinicId) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('clinics')
+      .select('*')
+      .eq('id', clinicId)
+      .single();
+    if (error) throw error;
+    set({ organisation: mapOrganisation(data as Record<string, unknown>) });
+  },
+
+  updateOrganisation: async (updates) => {
+    const clinicId = get().clinicId;
+    if (!clinicId) return;
+    const supabase = createClient();
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name    !== undefined) dbUpdates.name    = updates.name;
+    if (updates.address !== undefined) dbUpdates.address = updates.address || null;
+    if (updates.phone   !== undefined) dbUpdates.phone   = updates.phone   || null;
+    if (updates.email   !== undefined) dbUpdates.email   = updates.email   || null;
+    const { error } = await supabase.from('clinics').update(dbUpdates).eq('id', clinicId);
+    if (error) throw error;
+    set((state) => ({
+      organisation: state.organisation
+        ? { ...state.organisation, ...updates }
+        : state.organisation,
+    }));
+    if (updates.name) {
+      await supabase.auth.updateUser({ data: { clinic_name: updates.name } });
+    }
+  },
 
   // ─── Patients ─────────────────────────────────────────────────────────────
 

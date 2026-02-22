@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function SetupPage() {
   const [clinicName, setClinicName] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -26,7 +28,12 @@ export default function SetupPage() {
 
       const { data: clinic, error: clinicError } = await supabase
         .from('clinics')
-        .insert({ name: clinicName.trim(), owner_id: user.id })
+        .insert({
+          name: clinicName.trim(),
+          owner_id: user.id,
+          address: address.trim() || null,
+          phone: phone.trim() || null,
+        })
         .select()
         .single();
       if (clinicError) throw clinicError;
@@ -38,7 +45,7 @@ export default function SetupPage() {
       if (profileError) throw profileError;
 
       const { error: metaError } = await supabase.auth.updateUser({
-        data: { clinic_id: clinic.id, clinic_name: clinicName.trim() },
+        data: { clinic_id: clinic.id, clinic_name: clinicName.trim(), clinic_is_active: true },
       });
       if (metaError) throw metaError;
 
@@ -85,6 +92,40 @@ export default function SetupPage() {
                 onChange={(e) => setClinicName(e.target.value)}
                 placeholder="e.g. Sunrise Family Clinic"
                 required
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="address"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
+                Address <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                id="address"
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="e.g. 12 High Street, London"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
+                Phone <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="e.g. 020 7946 0000"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
               />
             </div>

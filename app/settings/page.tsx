@@ -17,10 +17,14 @@ import {
   Save,
   Eye,
   EyeOff,
+  Building2,
+  Copy,
 } from 'lucide-react';
+import { useStore } from '@/lib/store';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { currentUserRole, organisation, updateOrganisation, staffMembers } = useStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -49,6 +53,7 @@ export default function SettingsPage() {
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'language', label: 'Language', icon: Globe },
+    ...(currentUserRole === 'admin' ? [{ id: 'organisation', label: 'Organisation', icon: Building2 }] : []),
   ];
 
   const [notifications, setNotifications] = useState<{ email: boolean; push: boolean; sms: boolean; reminders: boolean; weekly: boolean }>(() => {
@@ -76,6 +81,10 @@ export default function SettingsPage() {
 
   const [prefsSaving, setPrefsSaving] = useState(false);
 
+  // Organisation tab state
+  const [orgSaving, setOrgSaving] = useState(false);
+  const [orgForm, setOrgForm] = useState({ name: '', address: '', phone: '', email: '' });
+
   function savePreferences(type: 'notifications' | 'appearance' | 'language') {
     setPrefsSaving(true);
     try {
@@ -89,6 +98,18 @@ export default function SettingsPage() {
       setPrefsSaving(false);
     }
   }
+
+  // Sync org form from store
+  useEffect(() => {
+    if (organisation) {
+      setOrgForm({
+        name:    organisation.name,
+        address: organisation.address,
+        phone:   organisation.phone,
+        email:   organisation.email,
+      });
+    }
+  }, [organisation]);
 
   // Load real profile on mount
   useEffect(() => {
@@ -173,6 +194,18 @@ export default function SettingsPage() {
       toast.error(err instanceof Error ? err.message : 'Failed to update password');
     } finally {
       setPasswordSaving(false);
+    }
+  }
+
+  async function saveOrganisation() {
+    setOrgSaving(true);
+    try {
+      await updateOrganisation(orgForm);
+      toast.success('Organisation saved');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save organisation');
+    } finally {
+      setOrgSaving(false);
     }
   }
 
@@ -486,6 +519,109 @@ export default function SettingsPage() {
                   <Save className="w-4 h-4" />
                   Save Preferences
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Organisation Tab */}
+          {activeTab === 'organisation' && (
+            <div className="space-y-6">
+              <div className="card">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
+                  Organisation Settings
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Organisation Name"
+                    value={orgForm.name}
+                    onChange={(e) => setOrgForm((f) => ({ ...f, name: e.target.value }))}
+                    required
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={orgForm.email}
+                    onChange={(e) => setOrgForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="e.g. hello@myclinic.co.uk"
+                  />
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Address"
+                      value={orgForm.address}
+                      onChange={(e) => setOrgForm((f) => ({ ...f, address: e.target.value }))}
+                      placeholder="e.g. 12 High Street, London"
+                    />
+                  </div>
+                  <Input
+                    label="Phone"
+                    value={orgForm.phone}
+                    onChange={(e) => setOrgForm((f) => ({ ...f, phone: e.target.value }))}
+                    placeholder="e.g. 020 7946 0000"
+                  />
+                </div>
+                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 flex justify-end">
+                  <Button onClick={saveOrganisation} disabled={orgSaving || !orgForm.name.trim()}>
+                    <Save className="w-4 h-4" />
+                    {orgSaving ? 'Saving…' : 'Save Changes'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Subscription Tier */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                  Subscription
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Current plan:</span>
+                  {organisation && (
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                        organisation.subscriptionTier === 'enterprise'
+                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                          : organisation.subscriptionTier === 'professional'
+                          ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400'
+                          : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-400'
+                      }`}
+                    >
+                      {organisation.subscriptionTier}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  {staffMembers.length} staff member{staffMembers.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {/* Invite Link */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                  Invite Team Members
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Share this link with staff to let them join your organisation.
+                </p>
+                {organisation && (
+                  <div className="flex gap-2">
+                    <input
+                      readOnly
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${organisation.id}?name=${encodeURIComponent(organisation.name)}`}
+                      className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-mono"
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `${window.location.origin}/join/${organisation.id}?name=${encodeURIComponent(organisation.name)}`
+                        );
+                        toast.success('Invite link copied!');
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                      Copy Link
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}

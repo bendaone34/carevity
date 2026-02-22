@@ -44,6 +44,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // If clinic is suspended, redirect to login
+  if (user && user.user_metadata?.clinic_is_active === false) {
+    if (!request.nextUrl.pathname.startsWith('/auth')) {
+      return NextResponse.redirect(new URL('/auth/login?error=suspended', request.url))
+    }
+  }
+
   // If authenticated but no clinic set up, redirect to /setup
   if (user && !user.user_metadata?.clinic_id) {
     if (!request.nextUrl.pathname.startsWith('/setup')) {
