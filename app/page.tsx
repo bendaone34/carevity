@@ -178,6 +178,9 @@ export default function Home() {
           <a href="#about" className="text-gray-600 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors font-medium">
             About
           </a>
+          <Link href="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors font-medium">
+            Pricing
+          </Link>
           <Link href="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors font-medium">
             Demo
           </Link>
