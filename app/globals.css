@@ -103,3 +103,48 @@ body {
 * {
   @apply transition-colors duration-200;
 }
+
+/* ── PWA / Mobile ────────────────────────────────────────────────────────── */
+
+/* iOS safe-area env() support */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Bottom padding for mobile content above the bottom nav + iOS home bar */
+.pb-safe-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Bottom nav safe area on iOS */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Ensure all interactive elements meet 44px minimum touch target on touch screens */
+@media (pointer: coarse) {
+  button:not([data-no-touch]),
+  [role="button"]:not([data-no-touch]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="time"],
+  input[type="search"],
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS auto-zoom on focus */
+  }
+}
+
+/* Prevent iOS text size adjustment */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

@@ -7,6 +7,7 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import toast from 'react-hot-toast';
+import { guardOnline } from '@/lib/offline';
 
 interface DailyCareRecordFormProps {
   onClose: () => void;
@@ -69,6 +70,7 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientId || !carerName) return;
+    if (!guardOnline()) return;
     setIsSaving(true);
     try {
       await addDailyCareRecord({

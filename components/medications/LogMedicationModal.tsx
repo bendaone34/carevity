@@ -7,6 +7,7 @@ import { useUser } from '@/hooks/useUser';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
+import { guardOnline } from '@/lib/offline';
 
 interface LogMedicationModalProps {
   medication: Medication;
@@ -42,6 +43,7 @@ export default function LogMedicationModal({ medication, onClose }: LogMedicatio
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardOnline()) return;
     setIsSaving(true);
     try {
       await addMedicationLog({

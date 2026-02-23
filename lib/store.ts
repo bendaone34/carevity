@@ -382,6 +382,9 @@ interface AppState {
   // Search
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+
+  // Reset (called on logout)
+  resetStore: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -1029,4 +1032,23 @@ export const useStore = create<AppState>((set, get) => ({
 
   searchQuery: '',
   setSearchQuery: (query) => set({ searchQuery: query }),
+
+  // ─── Reset (logout) ────────────────────────────────────────────────────────
+
+  resetStore: () => set({
+    clinicId: null,
+    clinicName: null,
+    organisation: null,
+    currentUserRole: null,
+    patients: [],
+    appointments: [],
+    medicalRecords: [],
+    staffMembers: [],
+    dailyCareRecords: [],
+    carePlans: [],
+    medications: [],
+    medicationLogs: [],
+    incidents: [],
+    searchQuery: '',
+  }),
 }));

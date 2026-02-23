@@ -1,4 +1,4 @@
-import Sidebar from '@/components/layout/Sidebar';
+import AppLayout from '@/components/layout/AppLayout';
 import LoadingWrapper from '@/components/layout/LoadingWrapper';
 
 export default function MedicationsLayout({
@@ -7,11 +7,8 @@ export default function MedicationsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
-      <Sidebar />
-      <main className="ml-64 p-8">
-        <LoadingWrapper>{children}</LoadingWrapper>
-      </main>
-    </div>
+    <AppLayout>
+      <LoadingWrapper>{children}</LoadingWrapper>
+    </AppLayout>
   );
 }

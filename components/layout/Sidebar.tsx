@@ -37,6 +37,7 @@ export default function Sidebar() {
   const user = useUser();
   const clinicName = useStore((s) => s.clinicName);
   const currentUserRole = useStore((s) => s.currentUserRole);
+  const resetStore = useStore((s) => s.resetStore);
   const incidents = useStore((s) => s.incidents);
   const openCritical = incidents.filter(
     (i) => i.severity === 'critical' && i.status !== 'resolved'
@@ -53,6 +54,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    resetStore();
     router.push('/auth/login');
   };
 
@@ -71,7 +73,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white dark:bg-slate-800 h-screen fixed left-0 top-0 border-r border-gray-200 dark:border-slate-700 flex flex-col z-40 transition-colors duration-300 print:hidden">
+    <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-800 h-screen fixed left-0 top-0 border-r border-gray-200 dark:border-slate-700 flex-col z-40 transition-colors duration-300 print:hidden">
       {/* Logo */}
       <div className="p-6 border-b border-gray-100 dark:border-slate-700">
         <Link href="/dashboard" className="flex items-center gap-3">

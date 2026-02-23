@@ -148,6 +148,7 @@ export default function IncidentsPage() {
                 </button>
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-slate-700/50 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   <tr>
@@ -190,6 +191,7 @@ export default function IncidentsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -250,6 +252,7 @@ export default function IncidentsPage() {
                 <p className="text-gray-500 dark:text-gray-400 text-sm">No incidents match your filters.</p>
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-slate-700/50 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   <tr>
@@ -305,6 +308,7 @@ export default function IncidentsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>

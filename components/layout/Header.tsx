@@ -42,10 +42,10 @@ export default function Header({
   }, [incidents, medications, medicationLogs]);
 
   return (
-    <header className="flex items-center justify-between mb-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h1>
-        {subtitle && <p className="text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
+    <header className="flex items-center justify-between mb-6 lg:mb-8">
+      <div className="min-w-0">
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-white truncate">{title}</h1>
+        {subtitle && <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-sm hidden sm:block">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
         {/* Search */}
