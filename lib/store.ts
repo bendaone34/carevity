@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident, Organisation } from './types';
+import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident, Organisation, Shift, ShiftResident } from './types';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── DB → TS mappers ─────────────────────────────────────────────────────────
@@ -291,6 +291,29 @@ function mapOrganisation(row: Record<string, unknown>): Organisation {
   };
 }
 
+function mapShift(row: Record<string, unknown>): Shift {
+  const profile = row.profiles as { full_name: string } | null;
+  const shiftResidents = (row.shift_residents as Array<{
+    patient_id: string;
+    patients: { first_name: string; last_name: string } | null;
+  }>) ?? [];
+  return {
+    id:        row.id as string,
+    staffId:   row.staff_id as string,
+    staffName: profile?.full_name ?? '',
+    date:      row.date as string,
+    startTime: row.start_time as string,
+    endTime:   row.end_time as string,
+    shiftType: row.shift_type as Shift['shiftType'],
+    notes:     row.notes as string | undefined,
+    residents: shiftResidents.map((sr): ShiftResident => ({
+      patientId:   sr.patient_id,
+      patientName: sr.patients ? `${sr.patients.first_name} ${sr.patients.last_name}` : '',
+    })),
+    createdAt: ((row.created_at as string) || '').split('T')[0],
+  };
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface AppState {
@@ -378,6 +401,19 @@ interface AppState {
   addIncident: (inc: Omit<Incident, 'id' | 'createdAt' | 'patientName'>) => Promise<void>;
   updateIncident: (id: string, updates: Partial<Omit<Incident, 'patientName'>>) => Promise<void>;
   deleteIncident: (id: string) => Promise<void>;
+
+  // Shifts
+  shifts: Shift[];
+  fetchShifts: () => Promise<void>;
+  addShift: (s: {
+    staffId: string; date: string; startTime: string; endTime: string;
+    shiftType: Shift['shiftType']; notes?: string; residentIds: string[];
+  }) => Promise<void>;
+  updateShift: (id: string, updates: Partial<{
+    staffId: string; date: string; startTime: string; endTime: string;
+    shiftType: Shift['shiftType']; notes?: string; residentIds: string[];
+  }>) => Promise<void>;
+  deleteShift: (id: string) => Promise<void>;
 
   // Search
   searchQuery: string;
@@ -1028,6 +1064,107 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({ incidents: state.incidents.filter((i) => i.id !== id) }));
   },
 
+  // ─── Shifts ────────────────────────────────────────────────────────────────
+
+  shifts: [],
+
+  fetchShifts: async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('*, profiles!shifts_staff_id_fkey(full_name), shift_residents(patient_id, patients(first_name, last_name))')
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true });
+    if (error) throw error;
+    set({ shifts: (data ?? []).map(mapShift) });
+  },
+
+  addShift: async (s) => {
+    const supabase = createClient();
+    const clinicId = get().clinicId;
+    const { data: newShift, error: shiftError } = await supabase
+      .from('shifts')
+      .insert({
+        clinic_id:  clinicId,
+        staff_id:   s.staffId,
+        date:       s.date,
+        start_time: s.startTime,
+        end_time:   s.endTime,
+        shift_type: s.shiftType,
+        notes:      s.notes || null,
+      })
+      .select('id')
+      .single();
+    if (shiftError) throw shiftError;
+
+    if (s.residentIds.length > 0) {
+      const { error: resError } = await supabase.from('shift_residents').insert(
+        s.residentIds.map((patientId) => ({
+          shift_id:   newShift.id,
+          patient_id: patientId,
+          clinic_id:  clinicId,
+        }))
+      );
+      if (resError) throw resError;
+    }
+
+    const { data: full, error: fetchError } = await supabase
+      .from('shifts')
+      .select('*, profiles!shifts_staff_id_fkey(full_name), shift_residents(patient_id, patients(first_name, last_name))')
+      .eq('id', newShift.id)
+      .single();
+    if (fetchError) throw fetchError;
+    set((state) => ({ shifts: [mapShift(full), ...state.shifts] }));
+  },
+
+  updateShift: async (id, updates) => {
+    const supabase = createClient();
+    const clinicId = get().clinicId;
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.staffId    !== undefined) dbUpdates.staff_id   = updates.staffId;
+    if (updates.date       !== undefined) dbUpdates.date       = updates.date;
+    if (updates.startTime  !== undefined) dbUpdates.start_time = updates.startTime;
+    if (updates.endTime    !== undefined) dbUpdates.end_time   = updates.endTime;
+    if (updates.shiftType  !== undefined) dbUpdates.shift_type = updates.shiftType;
+    if (updates.notes      !== undefined) dbUpdates.notes      = updates.notes || null;
+
+    if (Object.keys(dbUpdates).length > 0) {
+      const { error } = await supabase.from('shifts').update(dbUpdates).eq('id', id);
+      if (error) throw error;
+    }
+
+    if (updates.residentIds !== undefined) {
+      await supabase.from('shift_residents').delete().eq('shift_id', id);
+      if (updates.residentIds.length > 0) {
+        const { error: resError } = await supabase.from('shift_residents').insert(
+          updates.residentIds.map((patientId) => ({
+            shift_id:   id,
+            patient_id: patientId,
+            clinic_id:  clinicId,
+          }))
+        );
+        if (resError) throw resError;
+      }
+    }
+
+    const { data: full, error: fetchError } = await supabase
+      .from('shifts')
+      .select('*, profiles!shifts_staff_id_fkey(full_name), shift_residents(patient_id, patients(first_name, last_name))')
+      .eq('id', id)
+      .single();
+    if (fetchError) throw fetchError;
+    set((state) => ({
+      shifts: state.shifts.map((s) => (s.id === id ? mapShift(full) : s)),
+    }));
+  },
+
+  deleteShift: async (id) => {
+    const supabase = createClient();
+    const { error } = await supabase.from('shifts').delete().eq('id', id);
+    if (error) throw error;
+    set((state) => ({ shifts: state.shifts.filter((s) => s.id !== id) }));
+  },
+
   // ─── Search ────────────────────────────────────────────────────────────────
 
   searchQuery: '',
@@ -1049,6 +1186,7 @@ export const useStore = create<AppState>((set, get) => ({
     medications: [],
     medicationLogs: [],
     incidents: [],
+    shifts: [],
     searchQuery: '',
   }),
 }));

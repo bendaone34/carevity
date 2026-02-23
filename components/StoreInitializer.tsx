@@ -9,7 +9,7 @@ export default function StoreInitializer() {
     fetchPatients, fetchAppointments, fetchMedicalRecords,
     fetchCarePlans, fetchDailyCareRecords, fetchStaff,
     fetchMedications, fetchMedicationLogs, fetchIncidents,
-    fetchOrganisation,
+    fetchOrganisation, fetchShifts,
     setLoading, setClinic, setCurrentUserRole,
   } = useStore();
 
@@ -37,7 +37,7 @@ export default function StoreInitializer() {
         fetchPatients(), fetchAppointments(), fetchMedicalRecords(),
         fetchCarePlans(), fetchDailyCareRecords(), fetchStaff(),
         fetchMedications(), fetchMedicationLogs(), fetchIncidents(),
-        fetchOrganisation(),
+        fetchOrganisation(), fetchShifts(),
       ]).finally(() => setLoading(false));
     };
 

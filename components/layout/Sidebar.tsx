@@ -17,6 +17,7 @@ import {
   BarChart2,
   Pill,
   AlertTriangle,
+  CalendarClock,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { useUser } from '@/hooks/useUser';
@@ -65,6 +66,7 @@ export default function Sidebar() {
     { name: 'Medical Records', href: '/records', icon: FileText },
     { name: 'Care Plans', href: '/care-plans', icon: ClipboardList },
     { name: 'Daily Records', href: '/daily-records', icon: BookOpen },
+    { name: 'Shifts', href: '/shifts', icon: CalendarClock },
     { name: 'Medications', href: '/medications', icon: Pill },
     { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
     { name: 'Reports', href: '/reports', icon: BarChart2, roles: ['admin', 'manager'] },

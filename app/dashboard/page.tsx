@@ -59,14 +59,22 @@ export default function DashboardPage() {
   const medications    = useStore((s) => s.medications);
   const medicationLogs = useStore((s) => s.medicationLogs);
   const incidents      = useStore((s) => s.incidents);
+  const shifts         = useStore((s) => s.shifts);
   const openCriticalIncidents = incidents.filter(
     (i) => i.severity === 'critical' && i.status !== 'resolved'
   );
+  const currentUserRole = useStore((s) => s.currentUserRole);
+  const isAdminOrManager = currentUserRole === 'admin' || currentUserRole === 'manager';
   const todayISO = new Date().toISOString().split('T')[0];
   const loggedTodayIds = new Set(
     medicationLogs.filter((l) => l.date === todayISO && !l.refused).map((l) => l.medicationId)
   );
   const unloggedToday = medications.filter((m) => m.status === 'active' && !loggedTodayIds.has(m.id));
+
+  const todayShifts = shifts.filter((s) => s.date === todayISO);
+  const myNextShift = [...shifts]
+    .filter((s) => s.staffId === user?.id && s.date >= todayISO)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))[0];
 
   const stats = [
     {
@@ -137,7 +145,7 @@ export default function DashboardPage() {
       )}
 
       {/* Bottom panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
 
         {/* Today's Appointments */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
@@ -210,6 +218,68 @@ export default function DashboardPage() {
             </div>
           ) : (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No patients yet</p>
+          )}
+        </div>
+
+        {/* Shifts Panel */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              {isAdminOrManager ? "Today's Shifts" : 'My Next Shift'}
+            </h3>
+            <Link href="/shifts" className="text-sky-600 dark:text-sky-400 text-sm hover:underline">
+              {isAdminOrManager ? 'View rota →' : 'View schedule →'}
+            </Link>
+          </div>
+
+          {isLoading ? (
+            <ListSkeleton />
+          ) : isAdminOrManager ? (
+            todayShifts.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No shifts scheduled today</p>
+            ) : (
+              <div className="space-y-2">
+                {todayShifts.slice(0, 4).map((s) => (
+                  <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-800 dark:text-white text-sm truncate">{s.staffName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.startTime}–{s.endTime}</p>
+                    </div>
+                    <span className={`ml-2 shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      s.shiftType === 'morning'   ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400' :
+                      s.shiftType === 'afternoon' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                                                    'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                    }`}>
+                      {s.shiftType}
+                    </span>
+                  </div>
+                ))}
+                {todayShifts.length > 4 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center pt-1">
+                    +{todayShifts.length - 4} more
+                  </p>
+                )}
+              </div>
+            )
+          ) : myNextShift ? (
+            <div className="space-y-3">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                myNextShift.shiftType === 'morning'   ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400' :
+                myNextShift.shiftType === 'afternoon' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                                                        'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+              }`}>
+                {myNextShift.shiftType === 'morning' ? 'Morning 🌅' : myNextShift.shiftType === 'afternoon' ? 'Afternoon ☀️' : 'Night 🌙'}
+              </span>
+              <p className="text-sm font-medium text-gray-800 dark:text-white">
+                {new Date(myNextShift.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{myNextShift.startTime} – {myNextShift.endTime}</p>
+              {myNextShift.residents.length > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">{myNextShift.residents.length} resident{myNextShift.residents.length !== 1 ? 's' : ''} assigned</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No upcoming shifts</p>
           )}
         </div>
 

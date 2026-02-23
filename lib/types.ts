@@ -193,3 +193,21 @@ export interface User {
   role: 'admin' | 'doctor' | 'nurse' | 'receptionist';
   avatar?: string;
 }
+
+export interface ShiftResident {
+  patientId: string;
+  patientName: string;
+}
+
+export interface Shift {
+  id: string;
+  staffId: string;
+  staffName: string;
+  date: string;          // YYYY-MM-DD
+  startTime: string;     // HH:MM
+  endTime: string;       // HH:MM
+  shiftType: 'morning' | 'afternoon' | 'night';
+  notes?: string;
+  residents: ShiftResident[];
+  createdAt: string;
+}
