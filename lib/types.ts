@@ -194,6 +194,46 @@ export interface User {
   avatar?: string;
 }
 
+// ─── Wellbeing Alerts ─────────────────────────────────────────────────────────
+
+export type AlertType =
+  | 'nutrition_low'
+  | 'nutrition_none'
+  | 'fluids_low'
+  | 'mood_low'
+  | 'mood_drop'
+  | 'activity_none'
+  | 'medication_refusals'
+  | 'care_plan_overdue';
+
+export type AlertSeverity = 'low' | 'medium' | 'high';
+export type AlertStatus   = 'open' | 'acknowledged' | 'resolved';
+
+export interface WellbeingAlert {
+  id:          string;
+  clinicId:    string;
+  patientId:   string;
+  patientName: string;
+  alertType:   AlertType;
+  severity:    AlertSeverity;
+  status:      AlertStatus;
+  message:     string;
+  triggeredAt: string;
+  resolvedAt:  string | null;
+  createdAt:   string;
+}
+
+export interface AlertAcknowledgement {
+  id:                 string;
+  alertId:            string;
+  clinicId:           string;
+  acknowledgedBy:     string;
+  acknowledgedByName: string;
+  notes:              string | null;
+  actionTaken:        string | null;
+  createdAt:          string;
+}
+
 export interface ShiftResident {
   patientId: string;
   patientName: string;

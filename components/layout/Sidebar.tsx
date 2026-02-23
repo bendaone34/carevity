@@ -18,6 +18,7 @@ import {
   Pill,
   AlertTriangle,
   CalendarClock,
+  Bell,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { useUser } from '@/hooks/useUser';
@@ -43,6 +44,8 @@ export default function Sidebar() {
   const openCritical = incidents.filter(
     (i) => i.severity === 'critical' && i.status !== 'resolved'
   ).length;
+  const wellbeingAlerts = useStore((s) => s.wellbeingAlerts);
+  const openHighAlerts  = wellbeingAlerts.filter((a) => a.severity === 'high' && a.status === 'open').length;
 
   const fullName = user?.user_metadata?.full_name || user?.email || 'User';
   const initials = fullName
@@ -68,6 +71,7 @@ export default function Sidebar() {
     { name: 'Daily Records', href: '/daily-records', icon: BookOpen },
     { name: 'Shifts', href: '/shifts', icon: CalendarClock },
     { name: 'Medications', href: '/medications', icon: Pill },
+    { name: 'Alerts', href: '/alerts', icon: Bell, roles: ['admin', 'manager'] as Array<StaffMember['role']> },
     { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
     { name: 'Reports', href: '/reports', icon: BarChart2, roles: ['admin', 'manager'] },
     { name: 'Staff', href: '/staff', icon: UserCog },
@@ -121,6 +125,11 @@ export default function Sidebar() {
                     <span className="font-medium">{item.name}</span>
                   </div>
                   {isActive && <ChevronRight className="w-4 h-4" />}
+                  {!isActive && item.name === 'Alerts' && openHighAlerts > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-bold bg-red-500 text-white rounded-full">
+                      {openHighAlerts > 9 ? '9+' : openHighAlerts}
+                    </span>
+                  )}
                   {!isActive && item.name === 'Incidents' && openCritical > 0 && (
                     <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-bold bg-red-500 text-white rounded-full">
                       {openCritical > 9 ? '9+' : openCritical}

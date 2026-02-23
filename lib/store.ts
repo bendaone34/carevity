@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident, Organisation, Shift, ShiftResident } from './types';
+import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident, Organisation, Shift, ShiftResident, WellbeingAlert, AlertAcknowledgement, AlertType, AlertSeverity, AlertStatus } from './types';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── DB → TS mappers ─────────────────────────────────────────────────────────
@@ -314,6 +314,36 @@ function mapShift(row: Record<string, unknown>): Shift {
   };
 }
 
+function mapWellbeingAlert(row: Record<string, unknown>): WellbeingAlert {
+  const patient = row.patients as { first_name: string; last_name: string } | null;
+  return {
+    id:          row.id          as string,
+    clinicId:    row.clinic_id   as string,
+    patientId:   row.patient_id  as string,
+    patientName: patient ? `${patient.first_name} ${patient.last_name}` : '',
+    alertType:   row.alert_type  as AlertType,
+    severity:    row.severity    as AlertSeverity,
+    status:      row.status      as AlertStatus,
+    message:     row.message     as string,
+    triggeredAt: row.triggered_at as string,
+    resolvedAt:  (row.resolved_at as string | null) ?? null,
+    createdAt:   ((row.created_at as string) || '').split('T')[0],
+  };
+}
+
+function mapAlertAcknowledgement(row: Record<string, unknown>): AlertAcknowledgement {
+  return {
+    id:                 row.id                    as string,
+    alertId:            row.alert_id              as string,
+    clinicId:           row.clinic_id             as string,
+    acknowledgedBy:     row.acknowledged_by       as string,
+    acknowledgedByName: (row.acknowledged_by_name as string) ?? '',
+    notes:              (row.notes                as string | null) ?? null,
+    actionTaken:        (row.action_taken         as string | null) ?? null,
+    createdAt:          ((row.created_at          as string) || '').split('T')[0],
+  };
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface AppState {
@@ -414,6 +444,13 @@ interface AppState {
     shiftType: Shift['shiftType']; notes?: string; residentIds: string[];
   }>) => Promise<void>;
   deleteShift: (id: string) => Promise<void>;
+
+  // Wellbeing Alerts
+  wellbeingAlerts:       WellbeingAlert[];
+  alertAcknowledgements: AlertAcknowledgement[];
+  fetchWellbeingAlerts:  () => Promise<void>;
+  acknowledgeAlert:      (alertId: string, staffName: string, notes?: string, actionTaken?: string) => Promise<void>;
+  resolveAlert:          (alertId: string) => Promise<void>;
 
   // Search
   searchQuery: string;
@@ -1165,6 +1202,77 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({ shifts: state.shifts.filter((s) => s.id !== id) }));
   },
 
+  // ─── Wellbeing Alerts ──────────────────────────────────────────────────────
+
+  wellbeingAlerts:       [],
+  alertAcknowledgements: [],
+
+  fetchWellbeingAlerts: async () => {
+    const supabase = createClient();
+    const [alertsRes, acksRes] = await Promise.all([
+      supabase
+        .from('wellbeing_alerts')
+        .select('*, patients(first_name, last_name)')
+        .order('triggered_at', { ascending: false }),
+      supabase
+        .from('alert_acknowledgements')
+        .select('*')
+        .order('created_at', { ascending: false }),
+    ]);
+    if (alertsRes.error) throw alertsRes.error;
+    set({
+      wellbeingAlerts:       (alertsRes.data ?? []).map(mapWellbeingAlert),
+      alertAcknowledgements: (acksRes.data    ?? []).map(mapAlertAcknowledgement),
+    });
+  },
+
+  acknowledgeAlert: async (alertId, staffName, notes, actionTaken) => {
+    const supabase = createClient();
+    const clinicId = get().clinicId;
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data: ack, error: ackErr } = await supabase
+      .from('alert_acknowledgements')
+      .insert({
+        alert_id:              alertId,
+        clinic_id:             clinicId,
+        acknowledged_by:       user?.id,
+        acknowledged_by_name:  staffName,
+        notes:                 notes || null,
+        action_taken:          actionTaken || null,
+      })
+      .select()
+      .single();
+    if (ackErr) throw ackErr;
+
+    const { data: updated, error: updateErr } = await supabase
+      .from('wellbeing_alerts')
+      .update({ status: 'acknowledged' })
+      .eq('id', alertId)
+      .select('*, patients(first_name, last_name)')
+      .single();
+    if (updateErr) throw updateErr;
+
+    set((state) => ({
+      wellbeingAlerts:       state.wellbeingAlerts.map((a) => a.id === alertId ? mapWellbeingAlert(updated) : a),
+      alertAcknowledgements: [mapAlertAcknowledgement(ack), ...state.alertAcknowledgements],
+    }));
+  },
+
+  resolveAlert: async (alertId) => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('wellbeing_alerts')
+      .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+      .eq('id', alertId)
+      .select('*, patients(first_name, last_name)')
+      .single();
+    if (error) throw error;
+    set((state) => ({
+      wellbeingAlerts: state.wellbeingAlerts.map((a) => a.id === alertId ? mapWellbeingAlert(data) : a),
+    }));
+  },
+
   // ─── Search ────────────────────────────────────────────────────────────────
 
   searchQuery: '',
@@ -1187,6 +1295,8 @@ export const useStore = create<AppState>((set, get) => ({
     medicationLogs: [],
     incidents: [],
     shifts: [],
+    wellbeingAlerts: [],
+    alertAcknowledgements: [],
     searchQuery: '',
   }),
 }));

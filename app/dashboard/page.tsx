@@ -1,19 +1,20 @@
 'use client';
 
-import { Users, Calendar, ClipboardList, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Users, Calendar, ClipboardList, CheckCircle, AlertTriangle, Bell } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { useUser } from '@/hooks/useUser';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useStore } from '@/lib/store';
+import { useWellbeingAlerts } from '@/hooks/useWellbeingAlerts';
 
 // ─── Skeletons ────────────────────────────────────────────────────────────────
 
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {[...Array(4)].map((_, i) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      {[...Array(5)].map((_, i) => (
         <div key={i} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 animate-pulse">
           <div className="flex items-start justify-between">
             <div className="space-y-3 flex-1">
@@ -72,6 +73,9 @@ export default function DashboardPage() {
   const unloggedToday = medications.filter((m) => m.status === 'active' && !loggedTodayIds.has(m.id));
 
   const todayShifts = shifts.filter((s) => s.date === todayISO);
+  const { openHighCount, openMedCount, openLowCount, openTotalCount } = useWellbeingAlerts();
+  const highAlerts = useStore((s) => s.wellbeingAlerts.filter((a) => a.severity === 'high' && a.status === 'open'));
+
   const myNextShift = [...shifts]
     .filter((s) => s.staffId === user?.id && s.date >= todayISO)
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))[0];
@@ -105,6 +109,12 @@ export default function DashboardPage() {
       color: 'purple' as const,
       trend: trends.completedToday ?? undefined,
     },
+    ...(isAdminOrManager ? [{
+      title: 'Open Alerts',
+      value: openTotalCount,
+      icon: Bell,
+      color: 'yellow' as const,
+    }] : []),
   ];
 
   return (
@@ -113,6 +123,25 @@ export default function DashboardPage() {
         title="Dashboard"
         subtitle={`Welcome back, ${name}! Here's what's happening today.`}
       />
+
+      {/* High severity wellbeing alert banner */}
+      {isAdminOrManager && highAlerts.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+          <Bell className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+              {highAlerts.length} high severity wellbeing alert{highAlerts.length > 1 ? 's' : ''} require attention
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+              {highAlerts.slice(0, 2).map((a) => a.patientName).join(', ')}
+              {highAlerts.length > 2 ? ` +${highAlerts.length - 2} more` : ''}
+            </p>
+          </div>
+          <Link href="/alerts" className="text-xs font-medium text-red-700 dark:text-red-300 hover:underline shrink-0">
+            View alerts →
+          </Link>
+        </div>
+      )}
 
       {/* Critical incident banner */}
       {openCriticalIncidents.length > 0 && (
@@ -137,7 +166,7 @@ export default function DashboardPage() {
       {isLoading ? (
         <StatsSkeleton />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 ${isAdminOrManager ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
           {stats.map((stat) => (
             <StatsCard key={stat.title} {...stat} />
           ))}
@@ -282,6 +311,34 @@ export default function DashboardPage() {
             <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No upcoming shifts</p>
           )}
         </div>
+
+        {/* Wellbeing Alerts */}
+        {isAdminOrManager && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Wellbeing Alerts</h3>
+              <Link href="/alerts" className="text-sky-600 dark:text-sky-400 text-sm hover:underline">View all →</Link>
+            </div>
+            {isLoading ? (
+              <ListSkeleton />
+            ) : openTotalCount === 0 ? (
+              <p className="text-green-600 dark:text-green-400 text-sm font-medium text-center py-8">No open alerts</p>
+            ) : (
+              <div className="space-y-2">
+                {[
+                  { label: 'High',   count: openHighCount, cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+                  { label: 'Medium', count: openMedCount,  cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+                  { label: 'Low',    count: openLowCount,  cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
+                ].filter(({ count }) => count > 0).map(({ label, count, cls }) => (
+                  <div key={label} className={`flex items-center justify-between px-3 py-2 rounded-lg ${cls}`}>
+                    <span className="text-sm font-medium">{label} severity</span>
+                    <span className="text-sm font-bold">{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Medication Alerts */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">

@@ -4,6 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { useState } from 'react';
+import { useWellbeingAlerts } from '@/hooks/useWellbeingAlerts';
+import ResidentAlertBanner from '@/components/alerts/ResidentAlertBanner';
+import MoodSparkline from '@/components/alerts/MoodSparkline';
 import {
   Mail,
   Phone,
@@ -46,8 +49,9 @@ function getInitials(firstName: string, lastName: string): string {
 export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { patients, deletePatient, appointments, medicalRecords, medications } = useStore();
+  const { patients, deletePatient, appointments, medicalRecords, medications, dailyCareRecords } = useStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { alertsForPatient } = useWellbeingAlerts();
 
   const patientId = params.id as string;
   const patient = patients.find((p) => p.id === patientId);
@@ -76,6 +80,8 @@ export default function PatientDetailPage() {
   const patientAppointments = appointments.filter((a) => a.patientId === patient.id);
   const patientRecords = medicalRecords.filter((r) => r.patientId === patient.id);
   const patientMedications = medications.filter((m) => m.patientId === patient.id && m.status === 'active');
+  const patientCareRecords = dailyCareRecords.filter((r) => r.patientId === patient.id);
+  const patientAlerts = alertsForPatient(patient.id);
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this patient?')) {
@@ -143,6 +149,9 @@ export default function PatientDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Wellbeing alert banners */}
+      <ResidentAlertBanner alerts={patientAlerts} />
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -382,6 +391,12 @@ export default function PatientDetailPage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Mood trend */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 mt-6">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Mood Trend (last 14 days)</h3>
+        <MoodSparkline records={patientCareRecords} />
       </div>
 
       {/* Edit Patient Modal */}
