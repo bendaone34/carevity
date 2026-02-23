@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import toast from 'react-hot-toast';
 import { guardOnline } from '@/lib/offline';
+import { Sparkles, RefreshCw } from 'lucide-react';
 
 interface DailyCareRecordFormProps {
   onClose: () => void;
@@ -58,6 +59,9 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
   const [notes,     setNotes]     = useState('');
   const [isSaving,  setIsSaving]  = useState(false);
 
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
+
   const toggleMeal = (meal: 'breakfast' | 'lunch' | 'dinner') =>
     setMeals((prev) => ({ ...prev, [meal]: { ...prev[meal], eaten: !prev[meal].eaten } }));
 
@@ -66,6 +70,48 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
 
   const toggleCare = (field: 'bathing' | 'grooming' | 'dressing' | 'oralCare') =>
     setPersonalCare((prev) => ({ ...prev, [field]: !prev[field] }));
+
+  async function handleGenerateNote() {
+    const patient = patients.find((p) => p.id === patientId);
+    if (!patient) return;
+    const moodLabel = MOOD_OPTIONS.find((m) => m.score === moodScore)?.label ?? '';
+
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/generate-note', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          residentName:      `${patient.firstName} ${patient.lastName}`,
+          date,
+          moodScore,
+          moodLabel,
+          moodNotes,
+          breakfast:         meals.breakfast,
+          lunch:             meals.lunch,
+          dinner:            meals.dinner,
+          snacks:            meals.snacks,
+          fluidsMl:          meals.fluidsMl,
+          bathing:           personalCare.bathing,
+          grooming:          personalCare.grooming,
+          dressing:          personalCare.dressing,
+          oralCare:          personalCare.oralCare,
+          personalCareNotes: personalCare.notes,
+          activity,
+          incidents,
+          generalNotes:      notes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to generate');
+      setNotes(data.note);
+      setHasGenerated(true);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate note');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +125,8 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
       });
       toast.success('Daily care record saved');
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Something went wrong');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsSaving(false);
     }
@@ -279,16 +325,62 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
 
       <hr className="border-gray-100 dark:border-slate-700" />
 
-      {/* ── General notes ─────────────────────────────────────────────── */}
+      {/* ── AI Care Note ───────────────────────────────────────────────── */}
       <div>
-        {sectionTitle('General Notes')}
-        <textarea
-          rows={3}
-          placeholder="Any additional observations..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition resize-none"
-        />
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Care Note</h3>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-100 to-sky-100 dark:from-violet-900/40 dark:to-sky-900/40 text-violet-700 dark:text-violet-300 text-xs font-medium">
+              <Sparkles className="w-3 h-3" />
+              AI
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasGenerated && (
+              <button
+                type="button"
+                onClick={handleGenerateNote}
+                disabled={!patientId || isGenerating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:border-sky-300 dark:hover:border-sky-700 hover:text-sky-600 dark:hover:text-sky-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                {isGenerating ? 'Generating...' : 'Regenerate'}
+              </button>
+            )}
+            {!hasGenerated && (
+              <button
+                type="button"
+                onClick={handleGenerateNote}
+                disabled={!patientId || isGenerating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-violet-500 to-sky-500 hover:from-violet-600 hover:to-sky-600 text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-pulse' : ''}`} />
+                {isGenerating ? 'Generating...' : 'Generate Note'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className={`relative rounded-xl transition-all ${hasGenerated ? 'ring-1 ring-violet-200 dark:ring-violet-800' : ''}`}>
+          <textarea
+            rows={6}
+            placeholder={
+              patientId
+                ? 'Write care notes manually, or click "Generate Note" to create a professional, inspection-ready note from the data above...'
+                : 'Select a patient above, then use Generate Note to create a professional care note from the data you\'ve entered...'
+            }
+            value={notes}
+            onChange={(e) => { setNotes(e.target.value); }}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition resize-none"
+          />
+        </div>
+
+        {hasGenerated && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+            <Sparkles className="w-3 h-3 text-violet-400" />
+            AI generated — please review and edit before saving
+          </p>
+        )}
       </div>
 
       {/* Actions */}

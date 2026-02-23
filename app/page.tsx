@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, ClipboardList, BookOpen, Pill, Users, Sun, Moon, CheckCircle } from 'lucide-react';
+import { Heart, ClipboardList, BookOpen, Pill, Users, Sun, Moon, CheckCircle, Sparkles, FileText, Clock, ShieldCheck } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import Button from '@/components/ui/Button';
 import ChatBot from '@/components/ChatBot';
@@ -277,6 +277,108 @@ export default function Home() {
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* AI Note Generator Section */}
+      <section className="px-6 py-20 max-w-7xl mx-auto">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-600 to-sky-600 p-px shadow-2xl shadow-violet-500/20">
+          <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 px-8 py-14 md:px-16">
+            {/* Decorative blobs */}
+            <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-violet-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-sky-500/20 blur-3xl" />
+
+            <div className="relative max-w-4xl mx-auto">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-8">
+                <Sparkles className="w-4 h-4 text-violet-300" />
+                New — AI-Powered Care Note Generator
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                {/* Left: copy */}
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-6">
+                    Professional care notes,{' '}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-sky-300">
+                      written in seconds
+                    </span>
+                  </h2>
+                  <p className="text-gray-300 leading-relaxed text-base md:text-lg">
+                    Writing care notes is one of the most time-consuming parts of a carer&apos;s shift. After a long day of supporting residents, staff are expected to produce detailed, professional written records for every person in their care — often when they&apos;re tired and pressed for time.
+                  </p>
+                  <p className="text-gray-300 leading-relaxed text-base md:text-lg mt-4">
+                    Carevity&apos;s AI note generator solves this. Carers simply log what happened — how much a resident ate, their mood, fluid intake, personal care completed — and the AI instantly writes a professional, inspection-ready care note on their behalf. Staff can review and edit it before saving, but the hard work is already done.
+                  </p>
+                  <div className="mt-8">
+                    <Link href="/auth/signup">
+                      <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-slate-900 font-semibold hover:bg-gray-100 transition-colors shadow-lg">
+                        <Sparkles className="w-4 h-4 text-violet-600" />
+                        Try it free
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Right: mock UI */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-sm space-y-4">
+                  {/* Mock form data chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'Mood: Good 😊', color: 'bg-sky-500/20 text-sky-300' },
+                      { label: 'Fluids: 1200ml', color: 'bg-emerald-500/20 text-emerald-300' },
+                      { label: 'Lunch eaten', color: 'bg-amber-500/20 text-amber-300' },
+                      { label: 'Bathing ✓', color: 'bg-violet-500/20 text-violet-300' },
+                    ].map(({ label, color }) => (
+                      <span key={label} className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${color}`}>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Generate button */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-sky-500 text-white text-xs font-semibold">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Generate Note
+                    </div>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+
+                  {/* Mock generated note */}
+                  <div className="bg-white/8 border border-violet-400/20 rounded-xl p-4">
+                    <p className="text-gray-300 text-xs leading-relaxed">
+                      Margaret presented in good spirits throughout the day, engaging positively with staff and fellow residents. She was encouraged to participate in the morning chair exercise session and appeared to enjoy the activity. Margaret consumed her lunch in full, though her appetite at breakfast was reduced. Fluid intake was monitored closely at 1,200ml over the course of the shift, which falls within her target range. Personal care was completed with minimal assistance; Margaret co-operated well with bathing and oral hygiene. No incidents or concerns were observed during the shift. Staff will continue to monitor fluid intake and report any changes to her care coordinator.
+                    </p>
+                    <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
+                      <Sparkles className="w-3 h-3 text-violet-400" />
+                      AI generated — please review and edit before saving
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Three benefits */}
+              <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-white/10 pt-10">
+                {[
+                  { icon: Clock, title: 'Saves time every shift', body: 'Turn structured log data into a full prose note in under 5 seconds.' },
+                  { icon: ShieldCheck, title: 'CQC inspection-ready', body: 'Written in the formal, third-person style expected by regulators.' },
+                  { icon: FileText, title: 'Always editable', body: 'Carers review and edit before saving — the AI assists, not replaces.' },
+                ].map(({ icon: Icon, title, body }) => (
+                  <div key={title} className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                      <Icon className="w-4.5 h-4.5 text-violet-300" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold text-sm">{title}</p>
+                      <p className="text-gray-400 text-sm mt-0.5 leading-relaxed">{body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
