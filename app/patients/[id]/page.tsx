@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import PatientForm from '@/components/patients/PatientForm';
+import FamilyMembersSection from '@/components/patients/FamilyMembersSection';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
+import { formatShortDate } from '@/lib/utils';
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-US', {
@@ -49,8 +52,9 @@ function getInitials(firstName: string, lastName: string): string {
 export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { patients, deletePatient, appointments, medicalRecords, medications, dailyCareRecords } = useStore();
+  const { patients, deletePatient, appointments, medicalRecords, medications, dailyCareRecords, currentUserRole } = useStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const isManager = currentUserRole === 'admin' || currentUserRole === 'manager';
   const { alertsForPatient } = useWellbeingAlerts();
 
   const patientId = params.id as string;
@@ -92,13 +96,12 @@ export default function PatientDetailPage() {
 
   return (
     <div className="animate-fadeIn">
-      <Link
-        href="/patients"
-        className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Patients
-      </Link>
+      <Breadcrumbs
+        items={[
+          { label: 'Patients', href: '/patients' },
+          { label: `${patient.firstName} ${patient.lastName}` },
+        ]}
+      />
 
       {/* Patient Header */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6 mb-6">
@@ -114,7 +117,7 @@ export default function PatientDetailPage() {
                 {patient.firstName} {patient.lastName}
               </h1>
               <p className="text-gray-500 dark:text-gray-400">
-                Added {formatDate(patient.createdAt)}
+                Added {formatShortDate(patient.createdAt)}
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 capitalize">
@@ -398,6 +401,9 @@ export default function PatientDetailPage() {
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Mood Trend (last 14 days)</h3>
         <MoodSparkline records={patientCareRecords} />
       </div>
+
+      {/* Family Portal Access */}
+      <FamilyMembersSection patientId={patient.id} canManage={isManager} />
 
       {/* Edit Patient Modal */}
       <Modal

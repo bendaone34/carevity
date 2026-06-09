@@ -1,9 +1,12 @@
 'use client';
 
-import { Users, Calendar, ClipboardList, CheckCircle, AlertTriangle, Bell } from 'lucide-react';
+import { Users, Calendar, ClipboardList, CheckCircle, AlertTriangle, Bell, CalendarClock, ShieldCheck, Pill } from 'lucide-react';
 import Link from 'next/link';
+import { formatShortDate } from '@/lib/utils';
 import Header from '@/components/layout/Header';
 import StatsCard from '@/components/dashboard/StatsCard';
+import GettingStarted from '@/components/dashboard/GettingStarted';
+import FamilyVisitRequests from '@/components/dashboard/FamilyVisitRequests';
 import { useUser } from '@/hooks/useUser';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useStore } from '@/lib/store';
@@ -124,6 +127,9 @@ export default function DashboardPage() {
         subtitle={`Welcome back, ${name}! Here's what's happening today.`}
       />
 
+      {/* Getting started checklist (hidden once all steps done) */}
+      {!isLoading && <GettingStarted />}
+
       {/* High severity wellbeing alert banner */}
       {isAdminOrManager && highAlerts.length > 0 && (
         <div className="mb-4 flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
@@ -207,7 +213,13 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No appointments today</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-xl flex items-center justify-center mb-3">
+                <Calendar className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No appointments today</p>
+              <Link href="/appointments" className="mt-2 text-xs text-sky-600 dark:text-sky-400 hover:underline">Schedule one →</Link>
+            </div>
           )}
         </div>
 
@@ -241,12 +253,18 @@ export default function DashboardPage() {
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{patient.email}</p>
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{patient.createdAt}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{formatShortDate(patient.createdAt)}</p>
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No patients yet</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-xl flex items-center justify-center mb-3">
+                <Users className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No residents yet</p>
+              <Link href="/patients/new" className="mt-2 text-xs text-sky-600 dark:text-sky-400 hover:underline">Add your first resident →</Link>
+            </div>
           )}
         </div>
 
@@ -265,7 +283,13 @@ export default function DashboardPage() {
             <ListSkeleton />
           ) : isAdminOrManager ? (
             todayShifts.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No shifts scheduled today</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-xl flex items-center justify-center mb-3">
+                  <CalendarClock className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No shifts today</p>
+                <Link href="/shifts" className="mt-2 text-xs text-sky-600 dark:text-sky-400 hover:underline">View rota →</Link>
+              </div>
             ) : (
               <div className="space-y-2">
                 {todayShifts.slice(0, 4).map((s) => (
@@ -308,7 +332,13 @@ export default function DashboardPage() {
               )}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No upcoming shifts</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-xl flex items-center justify-center mb-3">
+                <CalendarClock className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No upcoming shifts</p>
+              <Link href="/shifts" className="mt-2 text-xs text-sky-600 dark:text-sky-400 hover:underline">View schedule →</Link>
+            </div>
           )}
         </div>
 
@@ -322,7 +352,12 @@ export default function DashboardPage() {
             {isLoading ? (
               <ListSkeleton />
             ) : openTotalCount === 0 ? (
-              <p className="text-green-600 dark:text-green-400 text-sm font-medium text-center py-8">No open alerts</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center mb-3">
+                  <ShieldCheck className="w-6 h-6 text-green-500" />
+                </div>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">All residents are doing well</p>
+              </div>
             ) : (
               <div className="space-y-2">
                 {[
@@ -340,6 +375,9 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Family Visit Requests */}
+        {isAdminOrManager && <FamilyVisitRequests />}
+
         {/* Medication Alerts */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -352,8 +390,11 @@ export default function DashboardPage() {
           {isLoading ? (
             <ListSkeleton />
           ) : unloggedToday.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-green-600 dark:text-green-400 text-sm font-medium">All medications logged today</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center mb-3">
+                <Pill className="w-6 h-6 text-green-500" />
+              </div>
+              <p className="text-sm font-medium text-green-600 dark:text-green-400">All medications logged today</p>
             </div>
           ) : (
             <div className="space-y-2">

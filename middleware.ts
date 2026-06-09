@@ -30,6 +30,21 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // ── Family portal routes ──────────────────────────────────────────────────
+  const familyProtectedPaths = ['/family/dashboard', '/family/care-notes', '/family/incidents', '/family/visits']
+  const isFamilyProtected = familyProtectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
+  const isFamilyPath = request.nextUrl.pathname.startsWith('/family/')
+
+  if (isFamilyProtected && !user) {
+    return NextResponse.redirect(new URL('/family/login', request.url))
+  }
+
+  // Family members bypass all staff-specific checks
+  if (isFamilyPath) {
+    return supabaseResponse
+  }
+
+  // ── Staff / clinic routes ─────────────────────────────────────────────────
   const protectedPaths = ['/dashboard', '/patients', '/appointments', '/records', '/settings', '/setup', '/care-plans', '/daily-records', '/staff', '/onboarding', '/reports', '/medications', '/incidents', '/shifts', '/alerts']
   const isProtected = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
@@ -52,7 +67,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // If authenticated but no clinic set up, redirect to /setup
-  if (user && !user.user_metadata?.clinic_id) {
+  if (user && !user.user_metadata?.clinic_id && !user.user_metadata?.is_family_member) {
     if (!request.nextUrl.pathname.startsWith('/setup')) {
       return NextResponse.redirect(new URL('/setup', request.url))
     }
