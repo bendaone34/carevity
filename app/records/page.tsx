@@ -9,9 +9,30 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { useStore } from '@/lib/store';
 import { Search, FileText } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
+
+function RecordCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6 animate-pulse">
+      <div className="flex items-start justify-between mb-3">
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-2/3 mb-4" />
+      <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-slate-700">
+        <Skeleton className="h-3 w-28" />
+      </div>
+    </div>
+  );
+}
 
 export default function RecordsPage() {
-  const { medicalRecords, patients } = useStore();
+  const { medicalRecords, patients, isLoading } = useStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPatient, setFilterPatient] = useState('all');
@@ -51,6 +72,7 @@ export default function RecordsPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Medical Records' }]} />
       <Header
         title="Medical Records"
         subtitle="View and manage patient medical records"
@@ -80,23 +102,37 @@ export default function RecordsPage() {
       </div>
 
       {/* Records Grid */}
-      {filteredRecords.length > 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => <RecordCardSkeleton key={i} />)}
+        </div>
+      ) : filteredRecords.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredRecords.map((record) => (
             <MedicalRecordCard key={record.id} record={record} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 bg-sky-50 dark:bg-sky-900/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <FileText className="w-10 h-10 text-sky-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">
-            No medical records found
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+            {medicalRecords.length === 0 ? 'No medical records yet' : 'No records found'}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            Try adjusting your search or create a new record
+          <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-6">
+            {medicalRecords.length === 0
+              ? 'Add medical records to track diagnoses, treatments, and prescriptions for your residents.'
+              : 'Try adjusting your search or patient filter.'}
           </p>
+          {medicalRecords.length === 0 && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
+            >
+              Add first record
+            </button>
+          )}
         </div>
       )}
 

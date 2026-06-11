@@ -8,6 +8,7 @@ import { useUser } from '@/hooks/useUser';
 import Header from '@/components/layout/Header';
 import Modal from '@/components/ui/Modal';
 import RotaCalendar from '@/components/shifts/RotaCalendar';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import ShiftCard from '@/components/shifts/ShiftCard';
 import ShiftDetails from '@/components/shifts/ShiftDetails';
 import ShiftForm from '@/components/shifts/ShiftForm';
@@ -44,6 +45,7 @@ export default function ShiftsPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Shifts & Rota' }]} />
       <Header
         title="Shifts"
         subtitle={isAdminOrManager ? 'Manage rota and staff schedules' : 'Your upcoming shift schedule'}

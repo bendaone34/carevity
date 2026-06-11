@@ -9,6 +9,29 @@ import { useUser } from '@/hooks/useUser';
 import { Incident } from '@/lib/types';
 import IncidentForm from '@/components/incidents/IncidentForm';
 import IncidentDetails from '@/components/incidents/IncidentDetails';
+import { SkeletonTableRow } from '@/components/ui/Skeleton';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
+
+function IncidentTableSkeleton({ cols }: { cols: number }) {
+  return (
+    <table className="w-full text-sm animate-pulse">
+      <thead className="bg-gray-50 dark:bg-slate-700/50">
+        <tr>
+          {Array.from({ length: cols }).map((_, i) => (
+            <th key={i} className="px-4 py-3 text-left">
+              <div className="h-3 w-16 bg-gray-200 dark:bg-slate-600 rounded" />
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonTableRow key={i} cols={cols} />
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 // ─── Badge helpers ─────────────────────────────────────────────────────────────
 
@@ -45,11 +68,12 @@ const TYPE_LABELS: Record<Incident['incidentType'], string> = {
 
 export default function IncidentsPage() {
   const user = useUser();
-  const { incidents, deleteIncident, currentUserRole, patients } = useStore((s) => ({
+  const { incidents, deleteIncident, currentUserRole, patients, isLoading } = useStore((s) => ({
     incidents:       s.incidents,
     deleteIncident:  s.deleteIncident,
     currentUserRole: s.currentUserRole,
     patients:        s.patients,
+    isLoading:       s.isLoading,
   }));
 
   const isManager = currentUserRole === 'admin' || currentUserRole === 'manager';
@@ -95,6 +119,7 @@ export default function IncidentsPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Incidents' }]} />
       <Header
         title="Incidents"
         subtitle="Log and manage incident reports"
@@ -133,18 +158,21 @@ export default function IncidentsPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
-            {logIncidents.length === 0 ? (
-              <div className="text-center py-14">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+            {isLoading ? (
+              <IncidentTableSkeleton cols={7} />
+            ) : logIncidents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 bg-green-50 dark:bg-green-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-green-500" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">No incidents reported</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-5">Report an incident to begin tracking.</p>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">No incidents reported</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-5 max-w-xs">All clear! Report an incident if something occurs during your shift.</p>
                 <button
                   onClick={() => setShowForm(true)}
-                  className="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
                 >
-                  Report incident
+                  <Plus className="w-4 h-4" />
+                  Report an incident
                 </button>
               </div>
             ) : (
@@ -244,12 +272,15 @@ export default function IncidentsPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
-            {managedIncidents.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-14 h-14 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
+            {isLoading ? (
+              <IncidentTableSkeleton cols={8} />
+            ) : managedIncidents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-14 h-14 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <AlertTriangle className="w-7 h-7 text-gray-400 dark:text-gray-500" />
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">No incidents match your filters.</p>
+                <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">No incidents match your filters</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Try adjusting the date range or filters above.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">

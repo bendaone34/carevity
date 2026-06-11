@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { TableProperties } from 'lucide-react';
 
 interface Column<T> {
   key: string;
@@ -13,9 +14,17 @@ interface TableProps<T> {
   rowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
+  emptyIcon?: React.ReactNode;
 }
 
-export default function Table<T>({ columns, data, rowKey, onRowClick, emptyMessage = 'No data found.' }: TableProps<T>) {
+export default function Table<T>({
+  columns,
+  data,
+  rowKey,
+  onRowClick,
+  emptyMessage = 'No data found.',
+  emptyIcon,
+}: TableProps<T>) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -24,7 +33,10 @@ export default function Table<T>({ columns, data, rowKey, onRowClick, emptyMessa
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={cn('text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide', col.className)}
+                className={cn(
+                  'text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide',
+                  col.className
+                )}
               >
                 {col.header}
               </th>
@@ -34,8 +46,13 @@ export default function Table<T>({ columns, data, rowKey, onRowClick, emptyMessa
         <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
-                {emptyMessage}
+              <td colSpan={columns.length}>
+                <div className="flex flex-col items-center justify-center py-14 text-center">
+                  <div className="w-14 h-14 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    {emptyIcon ?? <TableProperties className="w-7 h-7 text-gray-400 dark:text-gray-500" />}
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{emptyMessage}</p>
+                </div>
               </td>
             </tr>
           ) : (

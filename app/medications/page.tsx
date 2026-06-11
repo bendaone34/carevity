@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header';
 import Modal from '@/components/ui/Modal';
 import MedicationForm from '@/components/medications/MedicationForm';
 import MedicationCard from '@/components/medications/MedicationCard';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import MedicationDetails from '@/components/medications/MedicationDetails';
 import LogMedicationModal from '@/components/medications/LogMedicationModal';
 import { Plus, Search, Pill, ClipboardList } from 'lucide-react';
@@ -144,6 +145,7 @@ export default function MedicationsPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Medications' }]} />
       <Header title="Medications" subtitle="Manage medication profiles and track daily administrations." />
 
       {/* Tab Bar */}

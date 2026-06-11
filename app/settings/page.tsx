@@ -21,6 +21,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -221,6 +222,7 @@ export default function SettingsPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Settings' }]} />
       <Header title="Settings" subtitle="Manage your account preferences" />
 
       <div className="flex flex-col lg:flex-row gap-6">

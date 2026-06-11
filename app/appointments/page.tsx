@@ -7,6 +7,7 @@ import AppointmentForm from '@/components/appointments/AppointmentForm';
 import Modal from '@/components/ui/Modal';
 import { useStore } from '@/lib/store';
 import { Calendar, List } from 'lucide-react';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export default function AppointmentsPage() {
   const { appointments } = useStore();
@@ -19,6 +20,7 @@ export default function AppointmentsPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Appointments' }]} />
       <Header
         title="Appointments"
         subtitle={`${todayAppointments.length} appointment${todayAppointments.length !== 1 ? 's' : ''} today · Drag to reschedule`}

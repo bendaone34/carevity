@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Patient } from '@/lib/types';
-import { getInitials, formatDate } from '@/lib/utils';
+import { getInitials, formatShortDate } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
 
 interface RecentPatientsProps {
@@ -41,7 +41,7 @@ export default function RecentPatients({ patients }: RecentPatientsProps) {
             <div className="text-right hidden sm:block">
               <p className="text-sm text-gray-500">Added</p>
               <p className="text-sm font-medium text-gray-700">
-                {formatDate(patient.createdAt)}
+                {formatShortDate(patient.createdAt)}
               </p>
             </div>
           </Link>

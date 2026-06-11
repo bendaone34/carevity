@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"[Windows.Security.Credentials.PasswordVault,Windows.Security.Credentials,ContentType=WindowsRuntime]; $vault = New-Object Windows.Security.Credentials.PasswordVault; $vault.FindAllByResource\\(''supabase''\\) | ForEach-Object { $_.RetrievePassword\\(\\); $_ } 2>&1\")"
+      "Bash(powershell -Command \"[Windows.Security.Credentials.PasswordVault,Windows.Security.Credentials,ContentType=WindowsRuntime]; $vault = New-Object Windows.Security.Credentials.PasswordVault; $vault.FindAllByResource\\(''supabase''\\) | ForEach-Object { $_.RetrievePassword\\(\\); $_ } 2>&1\")",
+      "Bash(vercel --prod)",
+      "Bash(vercel ls:*)",
+      "Bash(grep -r family C:/Users/bened/nourishcare/app --include=*.tsx --include=*.ts -l)",
+      "Bash(ls C:/Users/bened/nourishcare/.env*)",
+      "Bash(ls C:/Users/bened/nourishcare/app/login*)",
+      "Bash(ls C:/Users/bened/nourishcare/app/auth*)",
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\bened\\\\nourishcare\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(dir C:\\\\Users\\\\bened\\\\nourishcare\\\\supabase\\\\migrations *)",
+      "Bash(Select-String *)",
+      "Bash(git commit *)",
+      "Bash(npx supabase *)"
     ]
   }
 }

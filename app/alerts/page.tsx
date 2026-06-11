@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Bell, Eye, CheckCircle, XCircle } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { useStore } from '@/lib/store';
@@ -82,6 +83,7 @@ export default function AlertsPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Wellbeing Alerts' }]} />
       <Header
         title="Wellbeing Alerts"
         subtitle="Automatically detected trends and declines across resident data"

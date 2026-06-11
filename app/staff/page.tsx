@@ -11,6 +11,27 @@ import { useUser } from '@/hooks/useUser';
 import { StaffMember } from '@/lib/types';
 import { UserCog } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Skeleton } from '@/components/ui/Skeleton';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
+
+function StaffCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6 animate-pulse">
+      <div className="flex items-start gap-4 mb-4">
+        <Skeleton className="w-12 h-12 rounded-full shrink-0" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-44" />
+        </div>
+        <Skeleton className="h-6 w-16 rounded-full" />
+      </div>
+      <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-slate-700">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-24" />
+      </div>
+    </div>
+  );
+}
 
 type RoleFilter = 'all' | StaffMember['role'];
 
@@ -26,7 +47,7 @@ const roleVariant: Record<StaffMember['role'], 'purple' | 'blue' | 'green'> = {
 };
 
 export default function StaffPage() {
-  const { staffMembers, currentUserRole, removeStaff } = useStore();
+  const { staffMembers, currentUserRole, removeStaff, isLoading } = useStore();
   const user = useUser();
 
   const [isInviteOpen,    setIsInviteOpen]    = useState(false);
@@ -59,6 +80,7 @@ export default function StaffPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Staff' }]} />
       <Header
         title="Staff"
         subtitle="Manage your team and their permissions"
@@ -127,7 +149,11 @@ export default function StaffPage() {
       )}
 
       {/* Staff grid */}
-      {filtered.length > 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => <StaffCardSkeleton key={i} />)}
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filtered.map((member) => (
             <StaffCard
@@ -141,20 +167,24 @@ export default function StaffPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserCog className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 bg-sky-50 dark:bg-sky-900/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <UserCog className="w-10 h-10 text-sky-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">No staff found</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">
-            {isAdmin ? 'Invite your first team member to get started.' : 'No staff in this view.'}
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+            {roleFilter === 'all' ? 'No staff members yet' : `No ${roleFilter}s found`}
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-6">
+            {isAdmin && roleFilter === 'all'
+              ? 'Invite your first team member to get started. They\'ll receive an email invitation.'
+              : 'No staff members match the current filter.'}
           </p>
-          {isAdmin && (
+          {isAdmin && roleFilter === 'all' && (
             <button
               onClick={() => setIsInviteOpen(true)}
-              className="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
             >
-              Invite staff
+              Invite first team member
             </button>
           )}
         </div>

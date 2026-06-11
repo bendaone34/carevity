@@ -3,6 +3,7 @@
 import { useStore } from '@/lib/store';
 import { useReportData } from '@/hooks/useReportData';
 import StatsCard from '@/components/dashboard/StatsCard';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import {
   Users,
   ClipboardList,
@@ -113,6 +114,7 @@ export default function ReportsPage() {
 
   return (
     <div className="animate-fadeIn" id="report-content">
+      <Breadcrumbs items={[{ label: 'Reports & Analytics' }]} className="print:hidden" />
 
       {/* ── Header (hidden when printing) ──────────────────────────────────── */}
       <div className="print:hidden">

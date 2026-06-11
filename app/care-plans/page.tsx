@@ -12,6 +12,28 @@ import { useStore } from '@/lib/store';
 import { CarePlan } from '@/lib/types';
 import { ClipboardList, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Skeleton } from '@/components/ui/Skeleton';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
+
+function CarePlanSkeleton() {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6 animate-pulse">
+      <div className="flex items-start justify-between mb-3">
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-3/4 mb-4" />
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+    </div>
+  );
+}
 
 type StatusFilter = 'all' | CarePlan['status'];
 
@@ -23,7 +45,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 ];
 
 export default function CarePlansPage() {
-  const { carePlans, patients, deleteCarePlan } = useStore();
+  const { carePlans, patients, deleteCarePlan, isLoading } = useStore();
 
   const [isFormOpen, setIsFormOpen]       = useState(false);
   const [selectedPlan, setSelectedPlan]   = useState<CarePlan | null>(null);
@@ -72,6 +94,7 @@ export default function CarePlansPage() {
 
   return (
     <div className="animate-fadeIn">
+      <Breadcrumbs items={[{ label: 'Care Plans' }]} />
       <Header
         title="Care Plans"
         subtitle="Manage and track patient care plans"
@@ -123,7 +146,11 @@ export default function CarePlansPage() {
       </div>
 
       {/* Grid */}
-      {filtered.length > 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => <CarePlanSkeleton key={i} />)}
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filtered.map((plan) => (
             <CarePlanCard
@@ -135,22 +162,24 @@ export default function CarePlansPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ClipboardList className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 bg-sky-50 dark:bg-sky-900/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <ClipboardList className="w-10 h-10 text-sky-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">No care plans found</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+            {carePlans.length === 0 ? 'No care plans yet' : 'No care plans found'}
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-6">
             {carePlans.length === 0
-              ? 'Create your first care plan to get started.'
-              : 'Try adjusting your search or filters.'}
+              ? 'Create personalised care plans for each resident to track their goals and progress.'
+              : 'Try adjusting your search or filters to find what you\'re looking for.'}
           </p>
           {carePlans.length === 0 && (
             <button
               onClick={() => setIsFormOpen(true)}
-              className="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl transition-colors"
             >
-              Create care plan
+              Create first care plan
             </button>
           )}
         </div>
