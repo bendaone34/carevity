@@ -15,7 +15,13 @@
       "Bash(dir C:\\\\Users\\\\bened\\\\nourishcare\\\\supabase\\\\migrations *)",
       "Bash(Select-String *)",
       "Bash(git commit *)",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "Bash(Start-Sleep -Seconds 15)",
+      "Bash(Get-Content \"C:\\\\Users\\\\bened\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-bened-nourishcare\\\\97579efc-c4df-4ebe-81b5-40fee8f4a050\\\\tasks\\\\b8gtaca0w.output\")",
+      "Read(//c/Users/bened/.config/**)",
+      "Read(//c/Users/bened/.supabase/**)",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__execute_sql"
     ]
   }
 }
