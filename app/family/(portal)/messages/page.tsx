@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, UserRound } from 'lucide-react';
+import { MessageSquare, UserRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useFamilyContext } from '@/hooks/useFamilyContext';
 
@@ -22,11 +22,9 @@ function formatFull(iso: string) {
 export default function FamilyMessagesPage() {
   const { context, isLoading: contextLoading } = useFamilyContext();
 
-  const [messages,      setMessages]      = useState<Message[]>([]);
-  const [todayCarer,    setTodayCarer]    = useState<string | null>(null);
-  const [messageText,   setMessageText]   = useState('');
-  const [isSending,     setIsSending]     = useState(false);
-  const [isLoading,     setIsLoading]     = useState(true);
+  const [messages,    setMessages]    = useState<Message[]>([]);
+  const [todayCarer,  setTodayCarer]  = useState<string | null>(null);
+  const [isLoading,   setIsLoading]   = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function loadMessages() {
@@ -82,7 +80,6 @@ export default function FamilyMessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context]);
 
-  // Poll for new messages every 8 seconds
   useEffect(() => {
     if (!context) return;
     const id = setInterval(loadMessages, 8000);
@@ -93,47 +90,6 @@ export default function FamilyMessagesPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    const text = messageText.trim();
-    if (!text || !context || isSending) return;
-
-    setIsSending(true);
-    setMessageText('');
-
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setIsSending(false); return; }
-
-    const { data, error } = await supabase
-      .from('family_messages')
-      .insert({
-        clinic_id:        context.clinicId,
-        patient_id:       context.patientId,
-        family_member_id: context.familyMemberId,
-        sender_type:      'family',
-        sender_id:        user.id,
-        sender_name:      context.memberName,
-        message:          text,
-      })
-      .select('id, created_at')
-      .single();
-
-    if (!error && data) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id:         data.id,
-          senderType: 'family',
-          senderName: context.memberName,
-          message:    text,
-          createdAt:  data.created_at,
-        },
-      ]);
-    }
-    setIsSending(false);
-  }
 
   if (contextLoading) {
     return (
@@ -149,7 +105,7 @@ export default function FamilyMessagesPage() {
       <div className="mb-4 shrink-0">
         <h1 className="text-xl font-bold text-gray-800 dark:text-white">Messages</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          Send a message to the care team looking after{' '}
+          Updates from the care team looking after{' '}
           <span className="font-medium text-sky-600 dark:text-sky-400">{context?.residentName}</span>
         </p>
       </div>
@@ -176,11 +132,11 @@ export default function FamilyMessagesPage() {
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-14 h-14 bg-sky-50 dark:bg-sky-900/20 rounded-full flex items-center justify-center mb-3">
-              <Send className="w-6 h-6 text-sky-400" />
+              <MessageSquare className="w-6 h-6 text-sky-400" />
             </div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start the conversation</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No messages yet</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-              You can ask questions or share updates with the care team. They&apos;ll reply as soon as they can.
+              Messages from the care team will appear here.
             </p>
           </div>
         ) : (
@@ -209,24 +165,6 @@ export default function FamilyMessagesPage() {
         )}
         <div ref={bottomRef} />
       </div>
-
-      {/* Send input */}
-      <form onSubmit={handleSend} className="flex gap-2 mt-3 shrink-0">
-        <input
-          value={messageText}
-          onChange={(e) => setMessageText(e.target.value)}
-          placeholder="Message the care team…"
-          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-        />
-        <button
-          type="submit"
-          disabled={!messageText.trim() || isSending}
-          className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center gap-2 text-sm font-medium"
-        >
-          <Send className="w-4 h-4" />
-          {isSending ? 'Sending…' : 'Send'}
-        </button>
-      </form>
     </div>
   );
 }
