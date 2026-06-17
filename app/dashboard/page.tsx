@@ -10,6 +10,7 @@ import FamilyVisitRequests from '@/components/dashboard/FamilyVisitRequests';
 import { useUser } from '@/hooks/useUser';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useStore } from '@/lib/store';
+import { useRole } from '@/hooks/useRole';
 import { useWellbeingAlerts } from '@/hooks/useWellbeingAlerts';
 
 // ─── Skeletons ────────────────────────────────────────────────────────────────
@@ -67,8 +68,7 @@ export default function DashboardPage() {
   const openCriticalIncidents = incidents.filter(
     (i) => i.severity === 'critical' && i.status !== 'resolved'
   );
-  const currentUserRole = useStore((s) => s.currentUserRole);
-  const isAdminOrManager = currentUserRole === 'admin' || currentUserRole === 'manager';
+  const { isAdminOrManager } = useRole();
   const todayISO = new Date().toISOString().split('T')[0];
   const loggedTodayIds = new Set(
     medicationLogs.filter((l) => l.date === todayISO && !l.refused).map((l) => l.medicationId)

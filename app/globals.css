@@ -5,99 +5,84 @@
 :root {
   --primary: 14 165 233;
   --primary-dark: 2 132 199;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Light mode defaults */
+/* Base body */
 body {
-  @apply bg-gray-50 text-gray-900 antialiased transition-colors duration-300;
+  @apply bg-slate-50 text-slate-900 antialiased;
 }
 
-/* Dark mode body */
 .dark body {
-  @apply bg-slate-900 text-gray-100;
+  @apply bg-slate-950 text-slate-100;
+}
+
+/* Focus ring system */
+:focus-visible {
+  @apply outline-none ring-2 ring-sky-500/50 ring-offset-2;
+}
+
+.dark :focus-visible {
+  @apply ring-offset-slate-950;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 font-medium text-sm rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply btn bg-sky-500 hover:bg-sky-600 text-white focus:ring-sky-500 px-4 py-2;
+    @apply btn bg-sky-500 hover:bg-sky-600 text-white px-4 py-2;
   }
 
   .btn-secondary {
-    @apply btn bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-gray-500 px-4 py-2;
-    @apply dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200;
+    @apply btn bg-transparent border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2;
+    @apply dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800;
   }
 
   .btn-danger {
-    @apply btn bg-red-500 hover:bg-red-600 text-white focus:ring-red-500 px-4 py-2;
+    @apply btn bg-red-500 hover:bg-red-600 text-white px-4 py-2;
   }
 
   .btn-ghost {
-    @apply btn hover:bg-gray-100 text-gray-600 px-4 py-2;
-    @apply dark:hover:bg-slate-700 dark:text-gray-300;
+    @apply btn text-slate-600 hover:bg-slate-100 hover:text-slate-900 px-4 py-2;
+    @apply dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white;
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-colors duration-300;
-    @apply dark:bg-slate-800 dark:border-slate-700;
+    @apply bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6;
   }
 
   .card-hover {
-    @apply card hover:shadow-md hover:border-gray-200 cursor-pointer;
-    @apply dark:hover:border-slate-600;
+    @apply card hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer transition-colors duration-150;
   }
 
   .input {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all duration-200 bg-white;
-    @apply dark:bg-slate-800 dark:border-slate-600 dark:text-white dark:placeholder-gray-400;
+    @apply w-full h-10 px-3 border border-slate-200 dark:border-slate-700 rounded-lg
+           focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none
+           bg-white dark:bg-slate-900 text-slate-900 dark:text-white
+           placeholder-slate-400 dark:placeholder-slate-500
+           transition-all duration-150;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1.5;
-    @apply dark:text-gray-300;
+    @apply block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5;
   }
 }
 
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-gray-100 rounded-full;
-}
-
-.dark ::-webkit-scrollbar-track {
-  @apply bg-slate-800;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full hover:bg-gray-400;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  @apply bg-slate-600 hover:bg-slate-500;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply bg-slate-200 dark:bg-slate-700 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-slate-300 dark:bg-slate-600; }
 
 /* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
+.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
 
 @keyframes loadingBar {
   0%   { transform: translateX(-100%); width: 40%; }
@@ -109,29 +94,13 @@ body {
   animation: loadingBar 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-/* Dark mode transitions */
-* {
-  @apply transition-colors duration-200;
-}
+/* Smooth colour transitions everywhere */
+* { transition-property: color, background-color, border-color; transition-duration: 150ms; }
 
-/* ── PWA / Mobile ────────────────────────────────────────────────────────── */
+/* PWA / Mobile */
+.pb-safe-nav  { padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
+.pb-safe      { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-/* iOS safe-area env() support */
-:root {
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* Bottom padding for mobile content above the bottom nav + iOS home bar */
-.pb-safe-nav {
-  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
-}
-
-/* Bottom nav safe area on iOS */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* Ensure all interactive elements meet 44px minimum touch target on touch screens */
 @media (pointer: coarse) {
   button:not([data-no-touch]),
   [role="button"]:not([data-no-touch]) {
@@ -139,21 +108,14 @@ body {
     min-width: 44px;
   }
 
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="tel"],
-  input[type="date"],
-  input[type="time"],
-  input[type="search"],
-  select,
-  textarea {
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="tel"], input[type="date"], input[type="time"],
+  input[type="search"], select, textarea {
     min-height: 44px;
-    font-size: 16px; /* prevents iOS auto-zoom on focus */
+    font-size: 16px;
   }
 }
 
-/* Prevent iOS text size adjustment */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;

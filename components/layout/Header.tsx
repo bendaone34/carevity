@@ -1,8 +1,7 @@
 'use client';
 
-import { Bell, Search, Plus } from 'lucide-react';
+import { Bell, Plus } from 'lucide-react';
 import Link from 'next/link';
-import ThemeSwitcher from '@/components/ui/ThemeSwitcher';
 import { useStore } from '@/lib/store';
 import { useMemo } from 'react';
 
@@ -42,34 +41,24 @@ export default function Header({
   }, [incidents, medications, medicationLogs]);
 
   return (
-    <header className="flex items-center justify-between mb-6 lg:mb-8">
+    <header className="flex items-start justify-between mb-6 lg:mb-8 gap-4">
       <div className="min-w-0">
-        <h1 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-white truncate">{title}</h1>
-        {subtitle && <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-sm hidden sm:block">{subtitle}</p>}
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h1>
+        {subtitle && (
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
+        )}
       </div>
-      <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="pl-10 pr-4 py-2.5 border border-gray-200 dark:border-slate-600 rounded-xl w-64 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400"
-          />
-        </div>
 
-        {/* Theme Switcher */}
-        <ThemeSwitcher />
-
+      <div className="flex items-center gap-2 shrink-0">
         {/* Notifications */}
         <Link
           href="/incidents"
-          className="relative p-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-          title={notificationCount > 0 ? `${notificationCount} alert${notificationCount > 1 ? 's' : ''} require attention` : 'No alerts'}
+          className="relative p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+          title={notificationCount > 0 ? `${notificationCount} item${notificationCount > 1 ? 's' : ''} need attention` : 'No alerts'}
         >
-          <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <Bell className="w-5 h-5" />
           {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
               {notificationCount > 9 ? '9+' : notificationCount}
             </span>
           )}
@@ -79,19 +68,18 @@ export default function Header({
         {showAddButton && addButtonHref && (
           <Link
             href={addButtonHref}
-            className="inline-flex items-center justify-center gap-2 font-medium rounded-lg bg-sky-500 hover:bg-sky-600 text-white px-4 py-2.5 transition-all duration-200"
+            className="inline-flex items-center gap-1.5 text-sm font-medium rounded-lg bg-sky-500 hover:bg-sky-600 text-white px-3.5 py-2 transition-colors"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             {addButtonText}
           </Link>
         )}
-
         {showAddButton && !addButtonHref && onAddClick && (
           <button
             onClick={onAddClick}
-            className="inline-flex items-center justify-center gap-2 font-medium rounded-lg bg-sky-500 hover:bg-sky-600 text-white px-4 py-2.5 transition-all duration-200"
+            className="inline-flex items-center gap-1.5 text-sm font-medium rounded-lg bg-sky-500 hover:bg-sky-600 text-white px-3.5 py-2 transition-colors"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             {addButtonText}
           </button>
         )}

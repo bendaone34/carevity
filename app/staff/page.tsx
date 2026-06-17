@@ -8,6 +8,7 @@ import StaffDetails from '@/components/staff/StaffDetails';
 import Modal from '@/components/ui/Modal';
 import { useStore } from '@/lib/store';
 import { useUser } from '@/hooks/useUser';
+import { useRole } from '@/hooks/useRole';
 import { StaffMember } from '@/lib/types';
 import { UserCog } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -47,14 +48,13 @@ const roleVariant: Record<StaffMember['role'], 'purple' | 'blue' | 'green'> = {
 };
 
 export default function StaffPage() {
-  const { staffMembers, currentUserRole, removeStaff, isLoading } = useStore();
+  const { staffMembers, removeStaff, isLoading } = useStore();
   const user = useUser();
+  const { isAdmin, role: currentUserRole } = useRole();
 
   const [isInviteOpen,    setIsInviteOpen]    = useState(false);
   const [selectedMember,  setSelectedMember]  = useState<StaffMember | null>(null);
   const [roleFilter,      setRoleFilter]      = useState<RoleFilter>('all');
-
-  const isAdmin = currentUserRole === 'admin';
 
   const filtered = useMemo(() =>
     roleFilter === 'all' ? staffMembers : staffMembers.filter((s) => s.role === roleFilter),

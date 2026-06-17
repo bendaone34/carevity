@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useStore } from '@/lib/store';
+import { useRole } from '@/hooks/useRole';
 import type { Appointment, Patient } from '@/lib/types';
 
 interface Trend { value: number; isPositive: boolean }
@@ -31,9 +32,10 @@ function calcTrend(current: number, previous: number): Trend | null {
 export function useDashboardStats(): DashboardData {
   const {
     patients, appointments, dailyCareRecords, staffMembers,
-    currentUserRole, fetchPatients, fetchAppointments, fetchDailyCareRecords,
+    fetchPatients, fetchAppointments, fetchDailyCareRecords,
     isLoading,
   } = useStore();
+  const { isCarer } = useRole();
 
   const [userId, setUserId]   = useState<string | null>(null);
   const [trends, setTrends]   = useState<DashboardData['trends']>({
@@ -54,7 +56,7 @@ export function useDashboardStats(): DashboardData {
   // []    → carer with no assignments
   // [...] → carer with assigned patient IDs
   const assignedIds: string[] | null =
-    currentUserRole === 'carer' && userId !== null
+    isCarer && userId !== null
       ? (staffMembers.find(s => s.id === userId)?.assignedPatientIds ?? [])
       : null;
 

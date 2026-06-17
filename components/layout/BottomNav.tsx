@@ -2,13 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  Pill,
-  AlertTriangle,
-} from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, Pill, AlertTriangle } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
 const NAV_ITEMS = [
@@ -27,7 +21,7 @@ export default function BottomNav() {
   ).length;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-gray-200 bg-white px-1 pb-safe dark:border-slate-700 dark:bg-slate-800 lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-1 pb-safe lg:hidden">
       {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
         const isActive = pathname === href || pathname.startsWith(href + '/');
         return (
@@ -35,9 +29,7 @@ export default function BottomNav() {
             key={href}
             href={href}
             className={`flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-1 transition-colors ${
-              isActive
-                ? 'text-sky-600 dark:text-sky-400'
-                : 'text-gray-500 dark:text-gray-400'
+              isActive ? 'text-sky-500' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
             <div className="relative">

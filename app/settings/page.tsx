@@ -21,11 +21,13 @@ import {
   Copy,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { useRole } from '@/hooks/useRole';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { currentUserRole, organisation, updateOrganisation, staffMembers } = useStore();
+  const { organisation, updateOrganisation, staffMembers } = useStore();
+  const { isAdmin } = useRole();
   const [activeTab, setActiveTab] = useState('profile');
   const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -54,7 +56,7 @@ export default function SettingsPage() {
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'language', label: 'Language', icon: Globe },
-    ...(currentUserRole === 'admin' ? [{ id: 'organisation', label: 'Organisation', icon: Building2 }] : []),
+    ...(isAdmin ? [{ id: 'organisation', label: 'Organisation', icon: Building2 }] : []),
   ];
 
   const [notifications, setNotifications] = useState<{ email: boolean; push: boolean; sms: boolean; reminders: boolean; weekly: boolean }>(() => {

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useStore } from '@/lib/store';
 import { Shift } from '@/lib/types';
 import { useUser } from '@/hooks/useUser';
+import { useRole } from '@/hooks/useRole';
 import Header from '@/components/layout/Header';
 import Modal from '@/components/ui/Modal';
 import RotaCalendar from '@/components/shifts/RotaCalendar';
@@ -15,9 +16,8 @@ import ShiftForm from '@/components/shifts/ShiftForm';
 
 export default function ShiftsPage() {
   const user = useUser();
-  const { shifts, deleteShift, currentUserRole } = useStore();
-
-  const isAdminOrManager = currentUserRole === 'admin' || currentUserRole === 'manager';
+  const { shifts, deleteShift } = useStore();
+  const { isAdminOrManager } = useRole();
   const todayISO = new Date().toISOString().split('T')[0];
 
   const myShifts = shifts

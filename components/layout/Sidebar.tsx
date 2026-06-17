@@ -2,28 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  FileText,
-  Settings,
-  LogOut,
-  Heart,
-  ChevronRight,
-  ClipboardList,
-  BookOpen,
-  UserCog,
-  BarChart2,
-  Pill,
-  AlertTriangle,
-  CalendarClock,
-  Bell,
+  LayoutDashboard, Users, Calendar, FileText, Settings, LogOut,
+  Heart, ClipboardList, BookOpen, UserCog, BarChart2, Pill,
+  AlertTriangle, CalendarClock, Bell, ChevronLeft, ChevronRight, Sun, Moon,
+  MessageSquare,
 } from 'lucide-react';
-import ThemeToggle from '@/components/ui/ThemeToggle';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
 import { useStore } from '@/lib/store';
+import { useRole } from '@/hooks/useRole';
+import { useSidebar } from '@/context/SidebarContext';
+import { useTheme } from '@/context/ThemeContext';
 import { StaffMember } from '@/lib/types';
 
 type MenuItem = {
@@ -31,21 +22,45 @@ type MenuItem = {
   href: string;
   icon: React.ElementType;
   roles?: Array<StaffMember['role']>;
+  badge?: number;
 };
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useUser();
+  const { collapsed, setCollapsed } = useSidebar();
+  const { theme, toggleTheme } = useTheme();
   const clinicName = useStore((s) => s.clinicName);
-  const currentUserRole = useStore((s) => s.currentUserRole);
+  const { role: currentUserRole } = useRole();
   const resetStore = useStore((s) => s.resetStore);
   const incidents = useStore((s) => s.incidents);
   const openCritical = incidents.filter(
     (i) => i.severity === 'critical' && i.status !== 'resolved'
   ).length;
   const wellbeingAlerts = useStore((s) => s.wellbeingAlerts);
-  const openHighAlerts  = wellbeingAlerts.filter((a) => a.severity === 'high' && a.status === 'open').length;
+  const openHighAlerts = wellbeingAlerts.filter(
+    (a) => a.severity === 'high' && a.status === 'open'
+  ).length;
+
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkUnread() {
+      const { createClient: cc } = await import('@/lib/supabase/client');
+      const supabase = cc();
+      const { count } = await supabase
+        .from('family_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('sender_type', 'family')
+        .is('read_at', null);
+      if (!cancelled) setUnreadMessages(count ?? 0);
+    }
+    checkUnread();
+    const id = setInterval(checkUnread, 30_000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
 
   const fullName = user?.user_metadata?.full_name || user?.email || 'User';
   const initials = fullName
@@ -63,107 +78,140 @@ export default function Sidebar() {
   };
 
   const menuItems: MenuItem[] = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Patients', href: '/patients', icon: Users },
-    { name: 'Appointments', href: '/appointments', icon: Calendar },
-    { name: 'Medical Records', href: '/records', icon: FileText },
-    { name: 'Care Plans', href: '/care-plans', icon: ClipboardList },
-    { name: 'Daily Records', href: '/daily-records', icon: BookOpen },
-    { name: 'Shifts', href: '/shifts', icon: CalendarClock },
-    { name: 'Medications', href: '/medications', icon: Pill },
-    { name: 'Alerts', href: '/alerts', icon: Bell, roles: ['admin', 'manager'] as Array<StaffMember['role']> },
-    { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
-    { name: 'Reports', href: '/reports', icon: BarChart2, roles: ['admin', 'manager'] },
-    { name: 'Staff', href: '/staff', icon: UserCog },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Dashboard',     href: '/dashboard',     icon: LayoutDashboard },
+    { name: 'Patients',      href: '/patients',       icon: Users },
+    { name: 'Appointments',  href: '/appointments',   icon: Calendar },
+    { name: 'Records',       href: '/records',        icon: FileText },
+    { name: 'Care Plans',    href: '/care-plans',     icon: ClipboardList },
+    { name: 'Daily Records', href: '/daily-records',  icon: BookOpen },
+    { name: 'Shifts',        href: '/shifts',         icon: CalendarClock },
+    { name: 'Medications',   href: '/medications',    icon: Pill },
+    { name: 'Messages',      href: '/messages',       icon: MessageSquare, badge: unreadMessages },
+    { name: 'Alerts',        href: '/alerts',         icon: Bell,          roles: ['admin', 'manager'] as Array<StaffMember['role']>, badge: openHighAlerts },
+    { name: 'Incidents',     href: '/incidents',      icon: AlertTriangle, badge: openCritical },
+    { name: 'Reports',       href: '/reports',        icon: BarChart2,     roles: ['admin', 'manager'] as Array<StaffMember['role']> },
+    { name: 'Staff',         href: '/staff',          icon: UserCog },
+    { name: 'Settings',      href: '/settings',       icon: Settings },
   ];
 
+  const visibleItems = menuItems.filter(
+    (item) => !item.roles || currentUserRole === null || item.roles.includes(currentUserRole)
+  );
+
   return (
-    <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-800 h-screen fixed left-0 top-0 border-r border-gray-200 dark:border-slate-700 flex-col z-40 transition-colors duration-300 print:hidden">
+    <aside
+      className={`hidden lg:flex flex-col h-screen fixed left-0 top-0 z-40 print:hidden
+        bg-sidebar transition-all duration-200
+        ${collapsed ? 'w-[60px]' : 'w-[220px]'}`}
+    >
       {/* Logo */}
-      <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/30">
-            <Heart className="w-6 h-6 text-white" />
+      <div className={`flex items-center h-14 shrink-0 px-3 border-b border-white/5 ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+        <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            <Heart className="w-4 h-4 text-white" />
           </div>
-          <div>
-            <span className="text-xl font-bold text-gray-800 dark:text-white">Carevity</span>
-            {clinicName
-              ? <p className="text-xs text-sky-600 font-medium truncate">{clinicName}</p>
-              : <p className="text-xs text-gray-500 dark:text-gray-400">Healthcare Management</p>
-            }
-          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <span className="text-sm font-semibold text-white leading-none">Carevity</span>
+              {clinicName && (
+                <p className="text-xs text-white/40 truncate leading-none mt-0.5">{clinicName}</p>
+              )}
+            </div>
+          )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <ul className="space-y-1">
-          {menuItems
-            .filter((item) => !item.roles || currentUserRole === null || item.roles.includes(currentUserRole))
-            .map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            const IconComponent = item.icon;
-            return (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    isActive
-                      ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <IconComponent
-                      className={`w-5 h-5 ${
-                        isActive
-                          ? 'text-sky-600 dark:text-sky-400'
-                          : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
-                      }`}
-                    />
-                    <span className="font-medium">{item.name}</span>
-                  </div>
-                  {isActive && <ChevronRight className="w-4 h-4" />}
-                  {!isActive && item.name === 'Alerts' && openHighAlerts > 0 && (
-                    <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-bold bg-red-500 text-white rounded-full">
-                      {openHighAlerts > 9 ? '9+' : openHighAlerts}
-                    </span>
-                  )}
-                  {!isActive && item.name === 'Incidents' && openCritical > 0 && (
-                    <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-bold bg-red-500 text-white rounded-full">
-                      {openCritical > 9 ? '9+' : openCritical}
-                    </span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        {visibleItems.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              title={collapsed ? item.name : undefined}
+              className={`flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-150 group relative
+                ${isActive
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                }
+                ${collapsed ? 'justify-center' : ''}`}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              {!collapsed && (
+                <span className="text-sm font-medium truncate flex-1">{item.name}</span>
+              )}
+              {!collapsed && item.badge && item.badge > 0 ? (
+                <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                  {item.badge > 9 ? '9+' : item.badge}
+                </span>
+              ) : null}
+              {collapsed && item.badge && item.badge > 0 ? (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              ) : null}
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Theme Toggle & User Section */}
-      <div className="p-4 border-t border-gray-100 dark:border-slate-700 space-y-4">
-        <div className="flex items-center justify-between px-4 py-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
-          <ThemeToggle />
-        </div>
+      {/* Bottom section */}
+      <div className="shrink-0 border-t border-white/5 py-3 px-2 space-y-1">
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          title={collapsed ? (theme === 'dark' ? 'Switch to light' : 'Switch to dark') : undefined}
+          className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-all duration-150 ${collapsed ? 'justify-center' : ''}`}
+        >
+          {theme === 'dark'
+            ? <Sun className="w-4 h-4 shrink-0" />
+            : <Moon className="w-4 h-4 shrink-0" />
+          }
+          {!collapsed && <span className="text-sm font-medium">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
+        </button>
 
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-700/50">
-          <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-white font-semibold text-sm">{initials}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{fullName}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            title="Sign out"
-            className="p-2 hover:bg-white dark:hover:bg-slate-600 rounded-lg transition-colors"
+        {/* Collapse toggle */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-all duration-150 ${collapsed ? 'justify-center' : ''}`}
+        >
+          {collapsed
+            ? <ChevronRight className="w-4 h-4 shrink-0" />
+            : <ChevronLeft className="w-4 h-4 shrink-0" />
+          }
+          {!collapsed && <span className="text-sm font-medium">Collapse</span>}
+        </button>
+
+        {/* User */}
+        <div className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg ${collapsed ? 'justify-center' : ''}`}>
+          <div
+            className="w-6 h-6 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center shrink-0 cursor-default"
+            title={collapsed ? fullName : undefined}
           >
-            <LogOut className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" />
-          </button>
+            <span className="text-white font-semibold text-[10px]">{initials}</span>
+          </div>
+          {!collapsed && (
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-white/80 truncate leading-none">{fullName}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="p-1 rounded text-white/40 hover:text-white transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+          {collapsed && (
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="absolute bottom-3 right-1 p-1 rounded text-white/40 hover:text-white transition-colors hidden"
+            />
+          )}
         </div>
       </div>
     </aside>

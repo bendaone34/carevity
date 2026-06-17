@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, AlertTriangle, CalendarCheck, Heart, ChevronRight } from 'lucide-react';
+import { BookOpen, AlertTriangle, CalendarCheck, Heart, ChevronRight, MessageSquare } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useFamilyContext } from '@/hooks/useFamilyContext';
 import { formatRelativeTime } from '@/lib/utils';
@@ -161,6 +161,7 @@ export default function FamilyDashboardPage() {
           { href: '/family/care-notes',  label: 'View care notes',    sub: 'Daily updates about your relative',      icon: BookOpen,        color: 'text-sky-500' },
           { href: '/family/incidents',   label: 'Incident log',        sub: 'See reported incidents',                 icon: AlertTriangle,   color: 'text-amber-500' },
           { href: '/family/visits',      label: 'Request a visit',     sub: 'Schedule time to visit your relative',   icon: CalendarCheck,   color: 'text-emerald-500' },
+          { href: '/family/messages',    label: 'Message the care team', sub: 'Ask questions or share updates',       icon: MessageSquare,   color: 'text-violet-500' },
         ].map(({ href, label, sub, icon: Icon, color }) => (
           <Link
             key={href}

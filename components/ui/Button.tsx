@@ -20,22 +20,24 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const variants = {
-    primary: 'bg-sky-500 hover:bg-sky-600 text-white focus:ring-sky-500',
-    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200 focus:ring-gray-500',
-    danger: 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500',
-    ghost: 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300',
+    primary:   'bg-sky-500 hover:bg-sky-600 text-white focus-visible:ring-sky-500/50',
+    secondary: 'bg-transparent border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800',
+    danger:    'bg-red-500 hover:bg-red-600 text-white focus-visible:ring-red-500/50',
+    ghost:     'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white',
   };
 
   const sizes = {
-    sm: 'text-sm px-3 py-1.5',
-    md: 'px-4 py-2',
-    lg: 'text-lg px-6 py-3',
+    sm: 'text-xs px-3 py-1.5 h-7',
+    md: 'text-sm px-4 py-2 h-9',
+    lg: 'text-sm px-5 py-2.5 h-10',
   };
 
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed',
         variants[variant],
         sizes[size],
         className
@@ -43,7 +45,7 @@ export default function Button({
       disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+      {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
       {children}
     </button>
   );

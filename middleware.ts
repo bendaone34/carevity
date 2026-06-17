@@ -30,8 +30,17 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // ── Role-based route blocking (carer cannot access manager/admin routes) ──
+  if (user) {
+    const userRole = user.user_metadata?.role as string | undefined;
+    const carerBlockedPaths = ['/alerts', '/reports'];
+    if (userRole === 'carer' && carerBlockedPaths.some(p => request.nextUrl.pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
+
   // ── Family portal routes ──────────────────────────────────────────────────
-  const familyProtectedPaths = ['/family/dashboard', '/family/care-notes', '/family/incidents', '/family/visits']
+  const familyProtectedPaths = ['/family/dashboard', '/family/care-notes', '/family/incidents', '/family/visits', '/family/messages']
   const isFamilyProtected = familyProtectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
   const isFamilyPath = request.nextUrl.pathname.startsWith('/family/')
 
@@ -45,7 +54,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Staff / clinic routes ─────────────────────────────────────────────────
-  const protectedPaths = ['/dashboard', '/patients', '/appointments', '/records', '/settings', '/setup', '/care-plans', '/daily-records', '/staff', '/onboarding', '/reports', '/medications', '/incidents', '/shifts', '/alerts']
+  const protectedPaths = ['/dashboard', '/patients', '/appointments', '/records', '/settings', '/setup', '/care-plans', '/daily-records', '/staff', '/onboarding', '/reports', '/medications', '/incidents', '/shifts', '/alerts', '/messages']
   const isProtected = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   if (isProtected && !user) {

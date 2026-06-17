@@ -7,6 +7,7 @@ import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { useStore } from '@/lib/store';
+import { useRole } from '@/hooks/useRole';
 import { useWellbeingAlerts } from '@/hooks/useWellbeingAlerts';
 import { WellbeingAlert } from '@/lib/types';
 import { SeverityBadge, AlertTypeBadge, ALERT_TYPE_LABELS } from '@/components/alerts/AlertBadge';
@@ -26,10 +27,9 @@ const STATUS_LABELS = {
 };
 
 export default function AlertsPage() {
-  const { resolveAlert, patients, currentUserRole } = useStore();
+  const { resolveAlert, patients } = useStore();
   const { activeAlerts, resolvedAlerts, acksForAlert, openHighCount, openMedCount, openLowCount } = useWellbeingAlerts();
-
-  const isAdminOrManager = currentUserRole === 'admin' || currentUserRole === 'manager';
+  const { isAdminOrManager } = useRole();
 
   const [tab,             setTab]             = useState<'active' | 'history'>('active');
   const [selectedAlert,   setSelectedAlert]   = useState<WellbeingAlert | null>(null);

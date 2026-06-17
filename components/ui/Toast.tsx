@@ -8,24 +8,17 @@ export default function ToastProvider() {
       position="top-right"
       toastOptions={{
         duration: 4000,
+        className: '!bg-white dark:!bg-slate-800 !text-slate-800 dark:!text-slate-100 !border !border-slate-100 dark:!border-slate-700 !shadow-lg !rounded-xl',
         style: {
-          background: '#fff',
-          color: '#363636',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
           borderRadius: '12px',
-          padding: '16px',
+          padding: '12px 16px',
+          fontSize: '14px',
         },
         success: {
-          iconTheme: {
-            primary: '#22c55e',
-            secondary: '#fff',
-          },
+          iconTheme: { primary: '#22c55e', secondary: '#fff' },
         },
         error: {
-          iconTheme: {
-            primary: '#ef4444',
-            secondary: '#fff',
-          },
+          iconTheme: { primary: '#ef4444', secondary: '#fff' },
         },
       }}
     />

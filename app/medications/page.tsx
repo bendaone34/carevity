@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '@/lib/store';
 import { useUser } from '@/hooks/useUser';
+import { useRole } from '@/hooks/useRole';
 import { Medication } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import Modal from '@/components/ui/Modal';
@@ -35,9 +36,10 @@ const STATUS_LABELS: Record<ScheduleStatus, string> = {
 export default function MedicationsPage() {
   const {
     medications, medicationLogs, patients, staffMembers,
-    currentUserRole, deleteMedication,
+    deleteMedication,
   } = useStore();
   const user = useUser();
+  const { isAdminOrManager, isAdmin, isCarer } = useRole();
 
   const [tab, setTab] = useState<'schedule' | 'medications' | 'log'>('schedule');
 
@@ -55,13 +57,10 @@ export default function MedicationsPage() {
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
   const [logPatientFilter, setLogPatientFilter] = useState('');
 
-  const isAdminOrManager = currentUserRole === 'admin' || currentUserRole === 'manager';
-  const isAdmin = currentUserRole === 'admin';
-
   // ── Role-aware patient scope ─────────────────────────────────────────────────
   const userId = user?.id ?? null;
   const assignedIds: string[] | null =
-    currentUserRole === 'carer' && userId !== null
+    isCarer && userId !== null
       ? (staffMembers.find((s) => s.id === userId)?.assignedPatientIds ?? [])
       : null;
 

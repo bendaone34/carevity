@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { SidebarProvider } from '@/context/SidebarContext';
 import ToastProvider from '@/components/ui/Toast';
 import StoreInitializer from '@/components/StoreInitializer';
 import ServiceWorkerRegistration from '@/components/pwa/ServiceWorkerRegistration';
@@ -44,11 +45,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <ServiceWorkerRegistration />
-          <OfflineBanner />
-          <ToastProvider />
-          <StoreInitializer />
-          {children}
+          <SidebarProvider>
+            <ServiceWorkerRegistration />
+            <OfflineBanner />
+            <ToastProvider />
+            <StoreInitializer />
+            {children}
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>

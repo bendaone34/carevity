@@ -77,12 +77,13 @@ export interface DailyCareRecord {
     oralCare: boolean;
     notes: string;
   };
-  moodScore: number;
-  moodNotes: string;
-  activity:  string;
-  incidents: string;
-  notes:     string;
-  createdAt: string;
+  moodScore:     number;
+  moodNotes:     string;
+  activity:      string;
+  incidents:     string;
+  notes:         string;
+  familyVisible: boolean;
+  createdAt:     string;
 }
 
 export interface CarePlanTask {

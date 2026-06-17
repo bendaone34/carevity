@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Modal from '@/components/ui/Modal';
 import { useStore } from '@/lib/store';
 import { useUser } from '@/hooks/useUser';
+import { useRole } from '@/hooks/useRole';
 import { Incident } from '@/lib/types';
 import IncidentForm from '@/components/incidents/IncidentForm';
 import IncidentDetails from '@/components/incidents/IncidentDetails';
@@ -68,16 +69,13 @@ const TYPE_LABELS: Record<Incident['incidentType'], string> = {
 
 export default function IncidentsPage() {
   const user = useUser();
-  const { incidents, deleteIncident, currentUserRole, patients, isLoading } = useStore((s) => ({
-    incidents:       s.incidents,
-    deleteIncident:  s.deleteIncident,
-    currentUserRole: s.currentUserRole,
-    patients:        s.patients,
-    isLoading:       s.isLoading,
+  const { incidents, deleteIncident, patients, isLoading } = useStore((s) => ({
+    incidents:      s.incidents,
+    deleteIncident: s.deleteIncident,
+    patients:       s.patients,
+    isLoading:      s.isLoading,
   }));
-
-  const isManager = currentUserRole === 'admin' || currentUserRole === 'manager';
-  const isAdmin   = currentUserRole === 'admin';
+  const { isAdminOrManager: isManager, isAdmin } = useRole();
 
   const [tab,             setTab]             = useState<'log' | 'manage'>('log');
   const [showForm,        setShowForm]        = useState(false);

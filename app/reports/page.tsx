@@ -1,6 +1,6 @@
 'use client';
 
-import { useStore } from '@/lib/store';
+import { useRole } from '@/hooks/useRole';
 import { useReportData } from '@/hooks/useReportData';
 import StatsCard from '@/components/dashboard/StatsCard';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
@@ -87,11 +87,11 @@ function exportCSV(report: ReturnType<typeof useReportData>, dateStr: string) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
-  const currentUserRole = useStore((s) => s.currentUserRole);
+  const { isCarer } = useRole();
   const report = useReportData();
 
   // Must be after all hook calls per React rules
-  if (currentUserRole === 'carer') return <AccessDeniedCard />;
+  if (isCarer) return <AccessDeniedCard />;
 
   const todayStr = new Date().toISOString().split('T')[0];
 

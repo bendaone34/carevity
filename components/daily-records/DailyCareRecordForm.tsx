@@ -59,6 +59,7 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
   const [notes,     setNotes]     = useState('');
   const [isSaving,  setIsSaving]  = useState(false);
 
+  const [familyVisible, setFamilyVisible] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
 
@@ -122,6 +123,7 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
       await addDailyCareRecord({
         patientId, date, carerName, recordedAt,
         meals, personalCare, moodScore, moodNotes, activity, incidents, notes,
+        familyVisible,
       });
       toast.success('Daily care record saved');
       onClose();
@@ -382,6 +384,23 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
           </p>
         )}
       </div>
+
+      <hr className="border-gray-100 dark:border-slate-700" />
+
+      {/* Family visibility */}
+      <label className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 cursor-pointer">
+        <div>
+          <p className="text-sm font-medium text-gray-800 dark:text-white">Share with family portal</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Family members linked to this resident can see this note</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setFamilyVisible((v) => !v)}
+          className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${familyVisible ? 'bg-sky-500' : 'bg-gray-300 dark:bg-slate-600'}`}
+        >
+          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${familyVisible ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
+      </label>
 
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">

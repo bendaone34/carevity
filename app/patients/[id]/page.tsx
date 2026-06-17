@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
+import { useRole } from '@/hooks/useRole';
 import { useState } from 'react';
 import { useWellbeingAlerts } from '@/hooks/useWellbeingAlerts';
 import ResidentAlertBanner from '@/components/alerts/ResidentAlertBanner';
@@ -52,9 +53,9 @@ function getInitials(firstName: string, lastName: string): string {
 export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { patients, deletePatient, appointments, medicalRecords, medications, dailyCareRecords, currentUserRole } = useStore();
+  const { patients, deletePatient, appointments, medicalRecords, medications, dailyCareRecords } = useStore();
+  const { isAdminOrManager: isManager } = useRole();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const isManager = currentUserRole === 'admin' || currentUserRole === 'manager';
   const { alertsForPatient } = useWellbeingAlerts();
 
   const patientId = params.id as string;

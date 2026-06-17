@@ -101,12 +101,13 @@ function mapDailyCareRecord(row: Record<string, unknown>): DailyCareRecord {
       oralCare: (pc.oral_care as boolean) ?? false,
       notes:    (pc.notes    as string)  ?? '',
     },
-    moodScore: (row.mood_score as number) ?? 3,
-    moodNotes: (row.mood_notes as string) ?? '',
-    activity:  (row.activity   as string) ?? '',
-    incidents: (row.incidents  as string) ?? '',
-    notes:     (row.notes      as string) ?? '',
-    createdAt: ((row.created_at as string) || '').split('T')[0],
+    moodScore:     (row.mood_score      as number)  ?? 3,
+    moodNotes:     (row.mood_notes      as string)  ?? '',
+    activity:      (row.activity        as string)  ?? '',
+    incidents:     (row.incidents       as string)  ?? '',
+    notes:         (row.notes           as string)  ?? '',
+    familyVisible: (row.family_visible  as boolean) ?? true,
+    createdAt:     ((row.created_at     as string)  || '').split('T')[0],
   };
 }
 
@@ -130,11 +131,12 @@ function dailyCareRecordToDb(r: Omit<DailyCareRecord, 'id' | 'createdAt' | 'pati
       oral_care: r.personalCare.oralCare,
       notes:     r.personalCare.notes,
     },
-    mood_score: r.moodScore,
-    mood_notes: r.moodNotes,
-    activity:   r.activity,
-    incidents:  r.incidents,
-    notes:      r.notes,
+    mood_score:     r.moodScore,
+    mood_notes:     r.moodNotes,
+    activity:       r.activity,
+    incidents:      r.incidents,
+    notes:          r.notes,
+    family_visible: r.familyVisible ?? true,
   };
 }
 

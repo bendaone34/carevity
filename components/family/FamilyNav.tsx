@@ -2,16 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Heart, LayoutDashboard, BookOpen, AlertTriangle, CalendarCheck, LogOut, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { Heart, LayoutDashboard, BookOpen, AlertTriangle, CalendarCheck, LogOut, Menu, X, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useFamilyContext } from '@/hooks/useFamilyContext';
 
 const navLinks = [
-  { href: '/family/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/family/care-notes',  label: 'Care Notes',  icon: BookOpen },
-  { href: '/family/incidents',   label: 'Incidents',   icon: AlertTriangle },
+  { href: '/family/dashboard',   label: 'Dashboard',      icon: LayoutDashboard },
+  { href: '/family/care-notes',  label: 'Care Notes',     icon: BookOpen },
+  { href: '/family/incidents',   label: 'Incidents',      icon: AlertTriangle },
   { href: '/family/visits',      label: 'Visit Requests', icon: CalendarCheck },
+  { href: '/family/messages',    label: 'Messages',       icon: MessageSquare },
 ];
 
 export default function FamilyNav() {
