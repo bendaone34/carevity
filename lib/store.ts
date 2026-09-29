@@ -682,8 +682,8 @@ export const useStore = create<AppState>((set, get) => ({
       supabase.from('profiles').select('*').order('created_at', { ascending: true }),
       supabase.from('staff_patient_assignments').select('staff_id, patient_id'),
     ]);
-    if (profilesRes.error) throw profilesRes.error;
-    const assignments = assignmentsRes.data ?? [];
+    if (profilesRes.error)    throw profilesRes.error;
+    if (assignmentsRes.error) throw assignmentsRes.error;
     const staffMembers = (profilesRes.data ?? []).map((row) => {
       const patientIds = assignments
         .filter((a) => a.staff_id === row.id)
@@ -1222,9 +1222,10 @@ export const useStore = create<AppState>((set, get) => ({
         .order('created_at', { ascending: false }),
     ]);
     if (alertsRes.error) throw alertsRes.error;
+    if (acksRes.error)   throw acksRes.error;
     set({
       wellbeingAlerts:       (alertsRes.data ?? []).map(mapWellbeingAlert),
-      alertAcknowledgements: (acksRes.data    ?? []).map(mapAlertAcknowledgement),
+      alertAcknowledgements: (acksRes.data   ?? []).map(mapAlertAcknowledgement),
     });
   },
 

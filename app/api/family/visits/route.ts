@@ -22,9 +22,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Derive clinicId from the DB — never trust the request body
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, clinic_id')
       .eq('id', user.id)
       .single();
 
@@ -32,15 +33,17 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Only admins and managers can review visit requests' }, { status: 403 });
     }
 
+    // clinic_id filter prevents approving/declining visit requests from other tenants
     const { error: updateError } = await supabase
       .from('visit_requests')
       .update({
         status,
-        staff_notes:  staffNotes ?? null,
-        reviewed_by:  user.id,
-        reviewed_at:  new Date().toISOString(),
+        staff_notes: staffNotes ?? null,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
       })
-      .eq('id', visitId);
+      .eq('id', visitId)
+      .eq('clinic_id', profile.clinic_id);
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });

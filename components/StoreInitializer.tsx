@@ -5,6 +5,8 @@ import { useStore } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
+const FETCH_LABELS: [() => Promise<void>, string][] = [];
+
 export default function StoreInitializer() {
   const {
     fetchPatients, fetchAppointments, fetchMedicalRecords,
@@ -34,14 +36,35 @@ export default function StoreInitializer() {
         }
 
         setLoading(true);
-        await Promise.all([
-          fetchPatients(), fetchAppointments(), fetchMedicalRecords(),
-          fetchCarePlans(), fetchDailyCareRecords(), fetchStaff(),
-          fetchMedications(), fetchMedicationLogs(), fetchIncidents(),
-          fetchOrganisation(), fetchShifts(), fetchWellbeingAlerts(),
-        ]);
+
+        // Use allSettled so a single failed fetch does not abort the rest.
+        // Each domain is labelled so we can surface a specific error message.
+        const tasks: [() => Promise<void>, string][] = [
+          [fetchPatients,         'patients'],
+          [fetchAppointments,     'appointments'],
+          [fetchMedicalRecords,   'medical records'],
+          [fetchCarePlans,        'care plans'],
+          [fetchDailyCareRecords, 'daily care records'],
+          [fetchStaff,            'staff'],
+          [fetchMedications,      'medications'],
+          [fetchMedicationLogs,   'medication logs'],
+          [fetchIncidents,        'incidents'],
+          [fetchOrganisation,     'organisation'],
+          [fetchShifts,           'shifts'],
+          [fetchWellbeingAlerts,  'wellbeing alerts'],
+        ];
+
+        const results = await Promise.allSettled(tasks.map(([fn]) => fn()));
+
+        const failed = results
+          .map((r, i) => (r.status === 'rejected' ? tasks[i][1] : null))
+          .filter(Boolean) as string[];
+
+        if (failed.length > 0) {
+          toast.error(`Failed to load: ${failed.join(', ')}. Please refresh.`);
+        }
       } catch {
-        toast.error('Failed to load some data. Please refresh the page.');
+        toast.error('Failed to initialise. Please refresh the page.');
       } finally {
         setLoading(false);
       }

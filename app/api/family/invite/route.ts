@@ -168,12 +168,24 @@ export async function DELETE(request: Request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, clinic_id')
       .eq('id', user.id)
       .single();
 
     if (!profile || !['admin', 'manager'].includes(profile.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    // Verify the family member belongs to the caller's clinic using the RLS-scoped
+    // client. If memberId is in a different clinic, RLS returns nothing → 404.
+    const { data: fm } = await supabase
+      .from('family_members')
+      .select('id')
+      .eq('id', memberId)
+      .single();
+
+    if (!fm) {
+      return NextResponse.json({ error: 'Not found or forbidden' }, { status: 404 });
     }
 
     const adminClient = createAdminClient(
@@ -184,7 +196,8 @@ export async function DELETE(request: Request) {
     await adminClient
       .from('family_members')
       .update({ status: 'deactivated' })
-      .eq('id', memberId);
+      .eq('id', memberId)
+      .eq('clinic_id', profile.clinic_id);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

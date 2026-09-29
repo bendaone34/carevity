@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // If env vars are not configured, skip auth checks to avoid crashing
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request })
   }
@@ -30,15 +29,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // ── Role-based route blocking (carer cannot access manager/admin routes) ──
-  if (user) {
-    const userRole = user.user_metadata?.role as string | undefined;
-    const carerBlockedPaths = ['/alerts', '/reports'];
-    if (userRole === 'carer' && carerBlockedPaths.some(p => request.nextUrl.pathname.startsWith(p))) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-  }
-
   // ── Family portal routes ──────────────────────────────────────────────────
   const familyProtectedPaths = ['/family/dashboard', '/family/care-notes', '/family/incidents', '/family/visits', '/family/messages']
   const isFamilyProtected = familyProtectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
@@ -46,6 +36,11 @@ export async function middleware(request: NextRequest) {
 
   if (isFamilyProtected && !user) {
     return NextResponse.redirect(new URL('/family/login', request.url))
+  }
+
+  // Block non-family-member accounts from the family portal
+  if (isFamilyProtected && user && !user.user_metadata?.is_family_member) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Family members bypass all staff-specific checks
@@ -61,24 +56,43 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // If authenticated and needs onboarding, redirect to /onboarding
-  if (user && user.user_metadata?.needs_onboarding === true) {
-    if (!request.nextUrl.pathname.startsWith('/onboarding')) {
-      return NextResponse.redirect(new URL('/onboarding', request.url))
-    }
-  }
+  if (user) {
+    // ── Role-based route blocking: query DB for authoritative role ──────────
+    // Never trust user_metadata.role — it is user-writable via supabase.auth.updateUser()
+    const carerBlockedPaths = ['/alerts', '/reports']
+    const isCarerBlocked = carerBlockedPaths.some(p => request.nextUrl.pathname.startsWith(p))
 
-  // If clinic is suspended, redirect to login
-  if (user && user.user_metadata?.clinic_is_active === false) {
-    if (!request.nextUrl.pathname.startsWith('/auth')) {
-      return NextResponse.redirect(new URL('/auth/login?error=suspended', request.url))
-    }
-  }
+    if (isCarerBlocked) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-  // If authenticated but no clinic set up, redirect to /setup
-  if (user && !user.user_metadata?.clinic_id && !user.user_metadata?.is_family_member) {
-    if (!request.nextUrl.pathname.startsWith('/setup')) {
-      return NextResponse.redirect(new URL('/setup', request.url))
+      if (profile?.role === 'carer') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    }
+
+    // Onboarding redirect (user_metadata is safe for non-security flow control here)
+    if (user.user_metadata?.needs_onboarding === true) {
+      if (!request.nextUrl.pathname.startsWith('/onboarding')) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
+    }
+
+    // Suspended clinic
+    if (user.user_metadata?.clinic_is_active === false) {
+      if (!request.nextUrl.pathname.startsWith('/auth')) {
+        return NextResponse.redirect(new URL('/auth/login?error=suspended', request.url))
+      }
+    }
+
+    // No clinic assigned yet
+    if (!user.user_metadata?.clinic_id && !user.user_metadata?.is_family_member) {
+      if (!request.nextUrl.pathname.startsWith('/setup')) {
+        return NextResponse.redirect(new URL('/setup', request.url))
+      }
     }
   }
 

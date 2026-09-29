@@ -38,7 +38,7 @@ export default function LogMedicationModal({ medication, onClose }: LogMedicatio
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const setField = (field: string, value: string | boolean) =>
+  const setField = (field: keyof typeof formData, value: string | boolean) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {

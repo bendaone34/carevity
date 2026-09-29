@@ -23,8 +23,11 @@ const MOOD_OPTIONS = [
   { score: 5, emoji: '😄', label: 'Great' },
 ];
 
-const today = new Date().toISOString().split('T')[0];
-const nowTime = new Date().toTimeString().slice(0, 5);
+// Functions, not constants — evaluated at render time, not module load time.
+// A module-level constant would give the wrong default date after midnight in a
+// long-running SPA session (e.g. carer opens app at 23:45, submits after midnight).
+function getToday()   { return new Date().toISOString().split('T')[0]; }
+function getNowTime() { return new Date().toTimeString().slice(0, 5); }
 
 function emptyMeal() { return { eaten: false, notes: '' }; }
 
@@ -32,9 +35,9 @@ export default function DailyCareRecordForm({ onClose, prefillPatientId }: Daily
   const { patients, addDailyCareRecord } = useStore();
 
   const [patientId,  setPatientId]  = useState(prefillPatientId ?? '');
-  const [date,       setDate]       = useState(today);
+  const [date,       setDate]       = useState(getToday);
   const [carerName,  setCarerName]  = useState('');
-  const [recordedAt, setRecordedAt] = useState(nowTime);
+  const [recordedAt, setRecordedAt] = useState(getNowTime);
 
   const [meals, setMeals] = useState({
     breakfast: emptyMeal(),

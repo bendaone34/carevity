@@ -31,11 +31,15 @@ export async function POST() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // Verify the invite was sent to this user's email address.
+    // This prevents a user from claiming a pending invite that was not meant for them
+    // by changing their own family_member_id metadata.
     const { error: updateError } = await adminClient
       .from('family_members')
       .update({ user_id: user.id, status: 'active' })
       .eq('id', familyMemberId)
-      .is('user_id', null);
+      .eq('email', user.email!)   // invite must match the authenticated user's email
+      .is('user_id', null);       // prevent re-activation of already-claimed records
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });

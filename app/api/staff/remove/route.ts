@@ -8,7 +8,6 @@ export async function POST(request: Request) {
     const { staffId } = await request.json();
     if (!staffId) return NextResponse.json({ error: 'Missing staffId' }, { status: 400 });
 
-    // Verify requesting user is an admin
     const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,9 +23,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You cannot remove yourself' }, { status: 400 });
     }
 
+    // Derive role and clinicId from the DB — never trust the request body
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, clinic_id')
       .eq('id', user.id)
       .single();
 
@@ -34,15 +34,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Only admins can remove staff' }, { status: 403 });
     }
 
+    // Verify the target staff member belongs to the requesting admin's clinic.
+    // Using the RLS-scoped client means this query returns nothing if staffId is
+    // in a different clinic, preventing cross-tenant staff removal.
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', staffId)
+      .single();
+
+    if (!targetProfile) {
+      return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
+    }
+
     const adminClient = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Clear clinic from the removed user's metadata and profile
     await Promise.all([
       adminClient.auth.admin.updateUserById(staffId, {
-        user_metadata: { clinic_id: null, clinic_name: null },
+        user_metadata:  { clinic_id: null, clinic_name: null },
+        app_metadata:   { role: 'carer', clinic_id: null, clinic_name: null },
       }),
       adminClient.from('profiles').update({ clinic_id: null }).eq('id', staffId),
     ]);
