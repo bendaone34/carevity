@@ -1,7 +1,10 @@
+// Run with: node --env-file=.env.local scripts/test-rls.mjs
 import { createClient } from '@supabase/supabase-js'
+import { requireEnv } from './env.mjs'
 
-const URL  = 'https://hxgzckniqpilupboowek.supabase.co'
-const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4Z3pja25pcXBpbHVwYm9vd2VrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0OTc4MDUsImV4cCI6MjA4NzA3MzgwNX0.bsRzdxqv2HJRJSCfa7LdR3tAyBMJRogUwSvUsR90i5Q'
+const URL      = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+const ANON     = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+const SEED_PWD = requireEnv('SEED_USER_PASSWORD')
 
 async function testUser(email, password, label) {
   const sb = createClient(URL, ANON)
@@ -20,7 +23,7 @@ async function testUser(email, password, label) {
   console.log(`  Medications (${medications?.length ?? 0}):`, medications?.map(m => m.name).join(', '))
 }
 
-await testUser('sarah.mitchell@sunfieldcare.co.uk',  'Carevity2026!', 'Sarah — Sunfield Admin')
-await testUser('david.clarke@riversidelodge.co.uk',  'Carevity2026!', 'David — Riverside Admin')
-await testUser('lucy.adams@sunfieldcare.co.uk',      'Carevity2026!', 'Lucy  — Sunfield Carer')
-await testUser('tom.hughes@riversidelodge.co.uk',    'Carevity2026!', 'Tom   — Riverside Carer')
+await testUser('sarah.mitchell@sunfieldcare.co.uk',  SEED_PWD, 'Sarah — Sunfield Admin')
+await testUser('david.clarke@riversidelodge.co.uk',  SEED_PWD, 'David — Riverside Admin')
+await testUser('lucy.adams@sunfieldcare.co.uk',      SEED_PWD, 'Lucy  — Sunfield Carer')
+await testUser('tom.hughes@riversidelodge.co.uk',    SEED_PWD, 'Tom   — Riverside Carer')

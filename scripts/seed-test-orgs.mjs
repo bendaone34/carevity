@@ -1,12 +1,13 @@
 // scripts/seed-test-orgs.mjs
 // Seeds two fully isolated organisations for multi-tenancy testing.
-// Run with: node scripts/seed-test-orgs.mjs
+// Run with: node --env-file=.env.local scripts/seed-test-orgs.mjs
 
 import { createClient } from '@supabase/supabase-js'
+import { requireEnv } from './env.mjs'
 
-const SUPABASE_URL = 'https://hxgzckniqpilupboowek.supabase.co'
-const SERVICE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4Z3pja25pcXBpbHVwYm9vd2VrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ5NzgwNSwiZXhwIjoyMDg3MDczODA1fQ.B7_OIo_M0rSdnjRhuTISa8txFTsK_dWetI9BWm1GWQg'
-const PASSWORD     = 'Carevity2026!'
+const SUPABASE_URL = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+const SERVICE_KEY  = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
+const PASSWORD     = requireEnv('SEED_USER_PASSWORD')
 
 const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
