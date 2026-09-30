@@ -41,6 +41,7 @@ export const AUDIT_RECORD_LABELS: Record<string, string> = {
   clinics:                   'organisation settings',
   clinic_join_links:         'staff invite link',
   visit_requests:            'visit request',
+  family_messages:           'family message',
 };
 
 // Internal keys and bookkeeping that mean nothing to a reader

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, AlertTriangle, CalendarCheck, Heart, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { londonDate } from '@/lib/emar';
 import { useFamilyContext } from '@/hooks/useFamilyContext';
 import { formatRelativeTime } from '@/lib/utils';
 
@@ -42,17 +43,8 @@ export default function FamilyDashboardPage() {
       const supabase = createClient();
 
       const [careNotesRes, incidentsRes, visitsRes] = await Promise.all([
-        supabase
-          .from('daily_care_records')
-          .select('date, mood_score')
-          .eq('patient_id', context!.patientId)
-          .order('date', { ascending: false })
-          .limit(1),
-        supabase
-          .from('incidents')
-          .select('id')
-          .eq('patient_id', context!.patientId)
-          .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+        supabase.rpc('family_care_notes', { p_patient_id: context!.patientId, p_limit: 1 }),
+        supabase.rpc('family_incidents', { p_patient_id: context!.patientId }),
         supabase
           .from('visit_requests')
           .select('id')
@@ -60,11 +52,15 @@ export default function FamilyDashboardPage() {
           .eq('status', 'pending'),
       ]);
 
+      const since = londonDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+      const latest = (careNotesRes.data as { date: string; mood_score: number | null }[] | null)?.[0];
+      const incidents = (incidentsRes.data as { date: string }[] | null) ?? [];
+
       setSummary({
-        lastCareNoteDate:  careNotesRes.data?.[0]?.date ?? null,
-        lastMoodScore:     careNotesRes.data?.[0]?.mood_score ?? null,
+        lastCareNoteDate:  latest?.date ?? null,
+        lastMoodScore:     latest?.mood_score ?? null,
         pendingVisits:     visitsRes.data?.length ?? 0,
-        recentIncidents:   incidentsRes.data?.length ?? 0,
+        recentIncidents:   incidents.filter((i) => i.date >= since).length,
       });
       setIsLoading(false);
     }

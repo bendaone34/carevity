@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, UserRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { londonDate } from '@/lib/emar';
 import { useFamilyContext } from '@/hooks/useFamilyContext';
 
 interface Message {
@@ -52,18 +53,16 @@ export default function FamilyMessagesPage() {
   async function loadTodayCarer() {
     if (!context) return;
     const supabase = createClient();
-    const today = new Date().toISOString().split('T')[0];
+    const today = londonDate(new Date());
 
-    const { data } = await supabase
-      .from('daily_care_records')
-      .select('carer_name, date')
-      .eq('patient_id', context.patientId)
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(1);
+    const { data } = await supabase.rpc('family_care_notes', {
+      p_patient_id: context.patientId,
+      p_limit:      1,
+    });
 
-    if (data && data.length > 0) {
-      const record = data[0];
+    const rows = data as { carer_name: string; date: string }[] | null;
+    if (rows && rows.length > 0) {
+      const record = rows[0];
       setTodayCarer(
         record.date === today
           ? record.carer_name

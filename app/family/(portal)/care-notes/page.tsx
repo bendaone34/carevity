@@ -123,12 +123,11 @@ export default function FamilyCareNotesPage() {
 
     async function load() {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('daily_care_records')
-        .select('id, date, carer_name, mood_score, mood_notes, activity, notes, meals')
-        .eq('patient_id', context!.patientId)
-        .order('date', { ascending: false })
-        .limit(90);
+      // Column-limited RPC: family users have no direct access to care records
+      const { data, error } = await supabase.rpc('family_care_notes', {
+        p_patient_id: context!.patientId,
+        p_limit:      90,
+      });
 
       if (!error && data) setNotes(data as CareNote[]);
       setIsLoading(false);

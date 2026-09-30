@@ -17,7 +17,10 @@ const MIGRATIONS = path.resolve(__dirname, '..', '..', 'supabase', 'migrations')
 // Helpers called inside RLS policies — the caller needs EXECUTE on these.
 const CALLABLE_BY_DESIGN = new Set(['get_my_role', 'get_my_clinic_id']);
 // RPCs signed-in users call directly; they must still be closed to PUBLIC/anon.
-const CALLABLE_BY_AUTHENTICATED = new Set(['create_clinic', 'create_join_link', 'accept_join_link']);
+const CALLABLE_BY_AUTHENTICATED = new Set([
+  'create_clinic', 'create_join_link', 'accept_join_link',
+  'family_care_notes', 'family_incidents',
+]);
 const REQUIRED_REVOKES = ['public', 'anon', 'authenticated'];
 
 interface FnState {

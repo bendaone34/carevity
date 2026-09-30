@@ -52,12 +52,10 @@ export default function FamilyIncidentsPage() {
 
     async function load() {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('incidents')
-        .select('id, date, time, incident_type, severity, description, status')
-        .eq('patient_id', context!.patientId)
-        .order('date', { ascending: false })
-        .order('time', { ascending: false });
+      // Column-limited RPC: internal notes and witnesses are never sent to family
+      const { data, error } = await supabase.rpc('family_incidents', {
+        p_patient_id: context!.patientId,
+      });
 
       if (!error && data) setIncidents(data as IncidentRow[]);
       setIsLoading(false);
