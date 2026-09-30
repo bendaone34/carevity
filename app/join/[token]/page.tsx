@@ -2,14 +2,13 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Heart, UserPlus, LogIn } from 'lucide-react';
 
 function JoinPageContent() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const clinicId = params.clinicId as string;
-  const name = searchParams.get('name') ?? 'an organisation';
+  // Opaque invite token — validated by accept_join_link after sign-in
+  const token = encodeURIComponent(params.token as string);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
@@ -31,21 +30,20 @@ function JoinPageContent() {
             You&apos;ve been invited
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mb-8">
-            You&apos;ve been invited to join{' '}
-            <span className="font-semibold text-gray-800 dark:text-white">{name}</span>
-            {' '}on Carevity.
+            You&apos;ve been invited to join an organisation on Carevity.
+            Invite links expire, so use it soon.
           </p>
 
           <div className="space-y-3">
             <Link
-              href={`/auth/signup?join=${clinicId}`}
+              href={`/auth/signup?join=${token}`}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-md shadow-sky-500/25 transition-all duration-200"
             >
               <UserPlus className="w-5 h-5" />
               Create Account
             </Link>
             <Link
-              href={`/auth/login?join=${clinicId}`}
+              href={`/auth/login?join=${token}`}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200"
             >
               <LogIn className="w-5 h-5" />

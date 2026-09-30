@@ -34,37 +34,35 @@ export async function GET(request: NextRequest) {
   }
 
   const { data: { user } } = await supabase.auth.getUser();
-  const pendingClinicId = user?.user_metadata?.pending_clinic_id;
+  const joinToken = user?.user_metadata?.pending_join_token;
 
-  if (pendingClinicId) {
-    const { data: clinic } = await supabase
-      .from('clinics')
-      .select('id, name, is_active')
-      .eq('id', pendingClinicId)
-      .single();
+  // Carry the session cookies set above onto a different redirect target
+  const redirectWithSession = (path: string) => {
+    const redirect = NextResponse.redirect(`${origin}${path}`);
+    response.cookies.getAll().forEach(({ name, value }) => redirect.cookies.set(name, value));
+    return redirect;
+  };
 
-    if (clinic?.is_active) {
-      await supabase
-        .from('profiles')
-        .update({ clinic_id: pendingClinicId, role: 'carer', is_onboarded: false })
-        .eq('id', user!.id);
+  if (typeof joinToken === 'string' && joinToken) {
+    // The RPC validates the token (expiry, uses, revocation) and sets
+    // profiles.clinic_id/role server-side. Metadata below is routing only.
+    const { data, error } = await supabase.rpc('accept_join_link', { p_token: joinToken });
 
-      await supabase.auth.updateUser({
-        data: {
-          clinic_id:        pendingClinicId,
-          clinic_name:      clinic.name,
-          clinic_is_active: true,
-          pending_clinic_id: null,
-          needs_onboarding:  true,
-        },
-      });
-
-      const onboardingRedirect = NextResponse.redirect(`${origin}/onboarding`);
-      response.cookies.getAll().forEach(({ name, value }) => {
-        onboardingRedirect.cookies.set(name, value);
-      });
-      return onboardingRedirect;
+    if (error || !data) {
+      await supabase.auth.updateUser({ data: { pending_join_token: null } });
+      return redirectWithSession('/auth/login?error=invalid_invite');
     }
+
+    await supabase.auth.updateUser({
+      data: {
+        clinic_id:          data.clinic_id,
+        clinic_name:        data.clinic_name,
+        clinic_is_active:   true,
+        pending_join_token: null,
+        needs_onboarding:   true,
+      },
+    });
+    return redirectWithSession('/onboarding');
   }
 
   return response;

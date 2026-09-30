@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 
 function SignupForm() {
   const searchParams = useSearchParams();
-  const joinClinicId = searchParams.get('join');
+  const joinToken = searchParams.get('join');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +47,8 @@ function SignupForm() {
         options: {
           data: {
             full_name: formData.name,
-            ...(joinClinicId ? { pending_clinic_id: joinClinicId } : {}),
+            // Redeemed by accept_join_link in /auth/callback after email verification
+            ...(joinToken ? { pending_join_token: joinToken } : {}),
           },
         },
       });

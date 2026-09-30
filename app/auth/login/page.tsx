@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heart, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
+
+const LOGIN_ERRORS: Record<string, string> = {
+  invalid_invite: 'This invite link is invalid or has expired. Ask your administrator for a new one.',
+  invalid_code:   'This sign-in link is invalid or has expired. Please try again.',
+  suspended:      'Your organisation’s account is suspended. Contact your administrator.',
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +22,12 @@ export default function LoginPage() {
     email: '',
     password: '',
   });
+
+  // Errors passed back by /auth/callback and the middleware
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('error');
+    if (code && LOGIN_ERRORS[code]) setError(LOGIN_ERRORS[code]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,10 +43,32 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message);
-      } else {
-        router.push('/dashboard');
-        router.refresh();
+        return;
       }
+
+      // Existing account arriving from an invite link: redeem the token
+      const joinToken = new URLSearchParams(window.location.search).get('join');
+      if (joinToken) {
+        const { data, error: joinError } = await supabase.rpc('accept_join_link', { p_token: joinToken });
+        if (joinError || !data) {
+          setError(joinError?.message ?? LOGIN_ERRORS.invalid_invite);
+          return;
+        }
+        await supabase.auth.updateUser({
+          data: {
+            clinic_id:        data.clinic_id,
+            clinic_name:      data.clinic_name,
+            clinic_is_active: true,
+            needs_onboarding: true,
+          },
+        });
+        router.push('/onboarding');
+        router.refresh();
+        return;
+      }
+
+      router.push('/dashboard');
+      router.refresh();
     } catch (err) {
       setError('Something went wrong. Please try again.');
     } finally {

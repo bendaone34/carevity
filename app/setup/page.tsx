@@ -26,26 +26,17 @@ export default function SetupPage() {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Not authenticated');
 
-      const { data: clinic, error: clinicError } = await supabase
-        .from('clinics')
-        .insert({
-          name: clinicName.trim(),
-          owner_id: user.id,
-          address: address.trim() || null,
-          phone: phone.trim() || null,
-        })
-        .select()
-        .single();
+      // Creates the clinic and makes the caller its admin in one transaction.
+      // Membership fields can't be written directly — RLS freezes them.
+      const { data: clinicId, error: clinicError } = await supabase.rpc('create_clinic', {
+        p_name:    clinicName.trim(),
+        p_address: address.trim() || null,
+        p_phone:   phone.trim() || null,
+      });
       if (clinicError) throw clinicError;
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ clinic_id: clinic.id, is_onboarded: true, role: 'admin' })
-        .eq('id', user.id);
-      if (profileError) throw profileError;
-
       const { error: metaError } = await supabase.auth.updateUser({
-        data: { clinic_id: clinic.id, clinic_name: clinicName.trim(), clinic_is_active: true },
+        data: { clinic_id: clinicId, clinic_name: clinicName.trim(), clinic_is_active: true },
       });
       if (metaError) throw metaError;
 

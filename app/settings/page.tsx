@@ -24,6 +24,10 @@ import { useStore } from '@/lib/store';
 import { useRole } from '@/hooks/useRole';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
+// Staff invite links (create_join_link RPC); the DB caps these at 100 uses / 30 days
+const INVITE_MAX_USES   = 10;
+const INVITE_VALID_DAYS = 7;
+
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { organisation, updateOrganisation, staffMembers } = useStore();
@@ -87,6 +91,42 @@ export default function SettingsPage() {
   // Organisation tab state
   const [orgSaving, setOrgSaving] = useState(false);
   const [orgForm, setOrgForm] = useState({ name: '', address: '', phone: '', email: '' });
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteBusy, setInviteBusy] = useState(false);
+
+  // Only the token's hash is stored, so a link can be shown once — when created
+  const generateInviteLink = async () => {
+    setInviteBusy(true);
+    try {
+      const { data: token, error } = await createClient().rpc('create_join_link', {
+        p_max_uses: INVITE_MAX_USES,
+        p_valid_days: INVITE_VALID_DAYS,
+      });
+      if (error) throw error;
+      setInviteLink(`${window.location.origin}/join/${token}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create invite link');
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
+  const revokeInviteLinks = async () => {
+    setInviteBusy(true);
+    try {
+      const { error } = await createClient()
+        .from('clinic_join_links')
+        .update({ revoked_at: new Date().toISOString() })
+        .is('revoked_at', null);
+      if (error) throw error;
+      setInviteLink(null);
+      toast.success('All invite links revoked');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to revoke invite links');
+    } finally {
+      setInviteBusy(false);
+    }
+  };
 
   function savePreferences(type: 'notifications' | 'appearance' | 'language') {
     setPrefsSaving(true);
@@ -603,21 +643,21 @@ export default function SettingsPage() {
                   Invite Team Members
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Share this link with staff to let them join your organisation.
+                  Generate a link for staff to join as carers. Each link works for{' '}
+                  {INVITE_VALID_DAYS} days and up to {INVITE_MAX_USES} sign-ups. You can change their role on the Staff page.
                 </p>
-                {organisation && (
-                  <div className="flex gap-2">
+                {inviteLink ? (
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       readOnly
-                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${organisation.id}?name=${encodeURIComponent(organisation.name)}`}
-                      className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-mono"
+                      value={inviteLink}
+                      aria-label="Invite link"
+                      className="flex-1 min-w-0 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-mono"
                     />
                     <Button
                       variant="secondary"
                       onClick={() => {
-                        navigator.clipboard.writeText(
-                          `${window.location.origin}/join/${organisation.id}?name=${encodeURIComponent(organisation.name)}`
-                        );
+                        navigator.clipboard.writeText(inviteLink);
                         toast.success('Invite link copied!');
                       }}
                     >
@@ -625,7 +665,19 @@ export default function SettingsPage() {
                       Copy Link
                     </Button>
                   </div>
+                ) : (
+                  <Button onClick={generateInviteLink} disabled={inviteBusy}>
+                    {inviteBusy ? 'Generating…' : 'Generate invite link'}
+                  </Button>
                 )}
+                <button
+                  type="button"
+                  onClick={revokeInviteLinks}
+                  disabled={inviteBusy}
+                  className="mt-3 text-sm text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                >
+                  Revoke all invite links
+                </button>
               </div>
             </div>
           )}
