@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  computeSchedule, isScheduledOn, londonDate, londonTime, parseDoseTimes, doseTimesFor,
+  computeSchedule, isScheduledOn, londonDate, londonTime, londonDayStartISO, parseDoseTimes, doseTimesFor,
 } from '@/lib/emar';
 import type { Medication, MedicationLog } from '@/lib/types';
 
@@ -39,6 +39,11 @@ describe('UK time helpers', () => {
     const t = new Date('2026-07-01T23:30:00Z'); // 00:30 BST on 2 July
     expect(londonDate(t)).toBe('2026-07-02');
     expect(londonTime(t)).toBe('00:30');
+  });
+
+  it('finds the UTC instant of London midnight for date filters', () => {
+    expect(londonDayStartISO('2026-07-01')).toBe('2026-06-30T23:00:00.000Z'); // BST
+    expect(londonDayStartISO('2026-01-15')).toBe('2026-01-15T00:00:00.000Z'); // GMT
   });
 
   it('matches UTC in winter (GMT)', () => {

@@ -59,6 +59,15 @@ export function londonTime(now: Date): string {
   return `${hh}:${mm}`;
 }
 
+/** UTC ISO timestamp of 00:00 London time on the given YYYY-MM-DD. */
+export function londonDayStartISO(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const utcMidnight = new Date(Date.UTC(y, m - 1, d));
+  // London is UTC+0 or UTC+1, so local midnight is at UTC midnight or an hour before
+  const offsetHours = Number(londonTime(utcMidnight).slice(0, 2));
+  return new Date(utcMidnight.getTime() - offsetHours * 3_600_000).toISOString();
+}
+
 const HHMM = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 
 function toMinutes(hhmm: string): number {

@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Calendar, FileText, Settings, LogOut,
   Heart, ClipboardList, BookOpen, UserCog, BarChart2, Pill,
   AlertTriangle, CalendarClock, Bell, ChevronLeft, ChevronRight, Sun, Moon,
-  MessageSquare,
+  MessageSquare, ScrollText,
 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
@@ -90,6 +90,7 @@ export default function Sidebar() {
     { name: 'Alerts',        href: '/alerts',         icon: Bell,          roles: ['admin', 'manager'] as Array<StaffMember['role']>, badge: openHighAlerts },
     { name: 'Incidents',     href: '/incidents',      icon: AlertTriangle, badge: openCritical },
     { name: 'Reports',       href: '/reports',        icon: BarChart2,     roles: ['admin', 'manager'] as Array<StaffMember['role']> },
+    { name: 'Audit Trail',   href: '/audit',          icon: ScrollText,    roles: ['admin', 'manager'] as Array<StaffMember['role']> },
     { name: 'Staff',         href: '/staff',          icon: UserCog },
     { name: 'Settings',      href: '/settings',       icon: Settings },
   ];

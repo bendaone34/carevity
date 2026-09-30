@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Staff / clinic routes ─────────────────────────────────────────────────
-  const protectedPaths = ['/dashboard', '/patients', '/appointments', '/records', '/settings', '/setup', '/care-plans', '/daily-records', '/staff', '/onboarding', '/reports', '/medications', '/incidents', '/shifts', '/alerts', '/messages']
+  const protectedPaths = ['/dashboard', '/patients', '/appointments', '/records', '/settings', '/setup', '/care-plans', '/daily-records', '/staff', '/onboarding', '/reports', '/medications', '/incidents', '/shifts', '/alerts', '/messages', '/audit']
   const isProtected = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   if (isProtected && !user) {
@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
   if (user) {
     // ── Role-based route blocking: query DB for authoritative role ──────────
     // Never trust user_metadata.role — it is user-writable via supabase.auth.updateUser()
-    const carerBlockedPaths = ['/alerts', '/reports']
+    const carerBlockedPaths = ['/alerts', '/reports', '/audit']
     const isCarerBlocked = carerBlockedPaths.some(p => request.nextUrl.pathname.startsWith(p))
 
     if (isCarerBlocked) {
