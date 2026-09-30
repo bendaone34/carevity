@@ -119,6 +119,8 @@ export interface Medication {
   name: string;
   dosage: string;
   frequency: string;
+  /** Prescribed HH:MM dose times; empty = standard round times for the frequency */
+  doseTimes: string[];
   route: string;
   prescribingDoctor: string;
   startDate: string;
@@ -135,8 +137,13 @@ export interface MedicationLog {
   patientName: string;
   medicationName: string;
   date: string;
+  /** When the dose was actually given/refused (HH:MM, care home time) */
   time: string;
+  /** Dose slot this log covers (HH:MM); absent for PRN and legacy rows */
+  scheduledTime?: string;
+  /** Stamped by the database from the signed-in user */
   givenBy: string;
+  givenById?: string;
   notes?: string;
   refused: boolean;
   createdAt: string;

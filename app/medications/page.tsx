@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { useUser } from '@/hooks/useUser';
 import { useRole } from '@/hooks/useRole';
@@ -14,23 +14,24 @@ import MedicationDetails from '@/components/medications/MedicationDetails';
 import LogMedicationModal from '@/components/medications/LogMedicationModal';
 import { Plus, Search, Pill, ClipboardList } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { computeSchedule, londonDate, type DoseStatus } from '@/lib/emar';
 
-type ScheduleStatus = 'given' | 'refused' | 'as-needed' | 'due' | 'overdue';
-
-const STATUS_STYLES: Record<ScheduleStatus, string> = {
+const STATUS_STYLES: Record<DoseStatus, string> = {
   given:      'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
   refused:    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
   'as-needed':'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400',
   due:        'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
   overdue:    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+  upcoming:   'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400',
 };
 
-const STATUS_LABELS: Record<ScheduleStatus, string> = {
+const STATUS_LABELS: Record<DoseStatus, string> = {
   given:      'Given',
   refused:    'Refused',
   'as-needed':'As Needed',
   due:        'Due',
   overdue:    'Overdue',
+  upcoming:   'Upcoming',
 };
 
 export default function MedicationsPage() {
@@ -51,10 +52,10 @@ export default function MedicationsPage() {
   const [detailsMed, setDetailsMed] = useState<Medication | null>(null);
 
   // Schedule tab state
-  const [logMed, setLogMed] = useState<Medication | null>(null);
+  const [logSlot, setLogSlot] = useState<{ med: Medication; time: string | null } | null>(null);
 
   // Log tab state
-  const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
+  const [logDate, setLogDate] = useState(() => londonDate(new Date()));
   const [logPatientFilter, setLogPatientFilter] = useState('');
 
   // ── Role-aware patient scope ─────────────────────────────────────────────────
@@ -65,41 +66,19 @@ export default function MedicationsPage() {
       : null;
 
   // ── Schedule computation ─────────────────────────────────────────────────────
-  const todayISO = new Date().toISOString().split('T')[0];
-  const hour = new Date().getHours();
+  // Re-evaluate every minute: tablets stay open on this page for a whole shift,
+  // and due/overdue must change (and the date roll over) without a reload.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
-  const scheduleData = useMemo(() => {
-    const activeMeds = medications.filter((m) => {
-      if (m.status !== 'active') return false;
-      if (assignedIds !== null && !assignedIds.includes(m.patientId)) return false;
-      return true;
-    });
-
-    const todayLogs = medicationLogs.filter((l) => l.date === todayISO);
-
-    const medWithStatus = activeMeds.map((med) => {
-      const log = todayLogs.find((l) => l.medicationId === med.id);
-      let status: ScheduleStatus;
-      if (log && !log.refused) status = 'given';
-      else if (log && log.refused) status = 'refused';
-      else if (!log && med.frequency === 'as needed') status = 'as-needed';
-      else if (!log && hour < 18) status = 'due';
-      else status = 'overdue';
-      return { med, status };
-    });
-
-    // Group by patient
-    const byPatient = new Map<string, { patientName: string; items: typeof medWithStatus }>();
-    for (const item of medWithStatus) {
-      const existing = byPatient.get(item.med.patientId);
-      if (existing) {
-        existing.items.push(item);
-      } else {
-        byPatient.set(item.med.patientId, { patientName: item.med.patientName, items: [item] });
-      }
-    }
-    return Array.from(byPatient.values());
-  }, [medications, medicationLogs, todayISO, hour, assignedIds]);
+  const scheduleData = useMemo(
+    () => computeSchedule(medications, medicationLogs, now, assignedIds),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- assignedIds is derived each render; compare by content
+    [medications, medicationLogs, now, assignedIds?.join(',')],
+  );
 
   // ── Medications tab filtering ─────────────────────────────────────────────────
   const filteredMeds = useMemo(() => {
@@ -176,35 +155,45 @@ export default function MedicationsPage() {
               <p className="text-gray-500 dark:text-gray-400">No active medications found for your patients.</p>
             </div>
           ) : (
-            scheduleData.map(({ patientName, items }) => (
-              <div key={patientName} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+            scheduleData.map(({ patientId, patientName, slots }) => (
+              <div key={patientId} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div className="px-5 py-3 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
                   <h3 className="font-semibold text-gray-800 dark:text-white">{patientName}</h3>
                 </div>
                 <div className="divide-y divide-gray-50 dark:divide-slate-700/50">
-                  {items.map(({ med, status }) => (
-                    <div key={med.id} className="flex items-center justify-between px-5 py-3 gap-4">
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800 dark:text-white text-sm">{med.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {med.dosage} · {med.frequency} · {med.route}
-                        </p>
+                  {slots.map(({ medication: med, time, status, logs }) => {
+                    const given = logs.find((l) => !l.refused);
+                    return (
+                      <div key={`${med.id}-${time ?? 'prn'}`} className="flex items-center justify-between px-5 py-3 gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="w-12 shrink-0 text-sm font-semibold tabular-nums text-gray-700 dark:text-gray-200">
+                            {time ?? 'PRN'}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-800 dark:text-white text-sm">{med.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {med.dosage} · {med.frequency} · {med.route}
+                              {given && ` · given ${given.time} by ${given.givenBy}`}
+                              {time === null && logs.length > 0 && ` · ${logs.length} logged today`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[status]}`}>
+                            {STATUS_LABELS[status]}
+                          </span>
+                          {status !== 'given' && (
+                            <button
+                              onClick={() => setLogSlot({ med, time })}
+                              className="min-h-[44px] px-4 text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
+                            >
+                              Log
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[status]}`}>
-                          {STATUS_LABELS[status]}
-                        </span>
-                        {status !== 'given' && (
-                          <button
-                            onClick={() => setLogMed(med)}
-                            className="px-3 py-1.5 text-xs font-medium bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
-                          >
-                            Log
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))
@@ -395,13 +384,17 @@ export default function MedicationsPage() {
       </Modal>
 
       <Modal
-        isOpen={logMed !== null}
-        onClose={() => setLogMed(null)}
+        isOpen={logSlot !== null}
+        onClose={() => setLogSlot(null)}
         title="Log Administration"
         size="md"
       >
-        {logMed && (
-          <LogMedicationModal medication={logMed} onClose={() => setLogMed(null)} />
+        {logSlot && (
+          <LogMedicationModal
+            medication={logSlot.med}
+            scheduledTime={logSlot.time}
+            onClose={() => setLogSlot(null)}
+          />
         )}
       </Modal>
     </div>

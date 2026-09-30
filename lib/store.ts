@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { Patient, Appointment, MedicalRecord, CarePlan, CarePlanTask, DailyCareRecord, StaffMember, Medication, MedicationLog, Incident, Organisation, Shift, ShiftResident, WellbeingAlert, AlertAcknowledgement, AlertType, AlertSeverity, AlertStatus } from './types';
 import { createClient } from '@/lib/supabase/client';
 
+export type NewMedicationLog =
+  Omit<MedicationLog, 'id' | 'createdAt' | 'patientName' | 'medicationName' | 'givenById'> & {
+    /** Generated once per log attempt; a retry with the same key is a no-op */
+    clientRequestId: string;
+  };
+
 // ─── DB → TS mappers ─────────────────────────────────────────────────────────
 
 function mapPatient(row: Record<string, unknown>): Patient {
@@ -227,6 +233,7 @@ function mapMedication(row: Record<string, unknown>): Medication {
     name:              row.name as string,
     dosage:            row.dosage as string,
     frequency:         row.frequency as string,
+    doseTimes:         (row.dose_times as string[] | null) ?? [],
     route:             row.route as string,
     prescribingDoctor: (row.prescribing_doctor as string) ?? '',
     startDate:         row.start_date as string,
@@ -248,7 +255,9 @@ function mapMedicationLog(row: Record<string, unknown>): MedicationLog {
     medicationName: med?.name ?? '',
     date:           row.date as string,
     time:           row.time as string,
+    scheduledTime:  (row.scheduled_time as string | null) ?? undefined,
     givenBy:        row.given_by as string,
+    givenById:      (row.given_by_id as string | null) ?? undefined,
     notes:          row.notes as string | undefined,
     refused:        (row.refused as boolean) ?? false,
     createdAt:      ((row.created_at as string) || '').split('T')[0],
@@ -425,7 +434,7 @@ interface AppState {
   // Medication Logs
   medicationLogs: MedicationLog[];
   fetchMedicationLogs: () => Promise<void>;
-  addMedicationLog: (log: Omit<MedicationLog, 'id' | 'createdAt' | 'patientName' | 'medicationName'>) => Promise<void>;
+  addMedicationLog: (log: NewMedicationLog) => Promise<void>;
 
   // Incidents
   incidents: Incident[];
@@ -684,6 +693,7 @@ export const useStore = create<AppState>((set, get) => ({
     ]);
     if (profilesRes.error)    throw profilesRes.error;
     if (assignmentsRes.error) throw assignmentsRes.error;
+    const assignments = assignmentsRes.data ?? [];
     const staffMembers = (profilesRes.data ?? []).map((row) => {
       const patientIds = assignments
         .filter((a) => a.staff_id === row.id)
@@ -948,6 +958,7 @@ export const useStore = create<AppState>((set, get) => ({
         name:              med.name,
         dosage:            med.dosage,
         frequency:         med.frequency,
+        dose_times:        med.doseTimes,
         route:             med.route,
         prescribing_doctor: med.prescribingDoctor,
         start_date:        med.startDate,
@@ -970,6 +981,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (updates.name              !== undefined) dbUpdates.name               = merged.name;
     if (updates.dosage            !== undefined) dbUpdates.dosage             = merged.dosage;
     if (updates.frequency         !== undefined) dbUpdates.frequency          = merged.frequency;
+    if (updates.doseTimes         !== undefined) dbUpdates.dose_times         = merged.doseTimes;
     if (updates.route             !== undefined) dbUpdates.route              = merged.route;
     if (updates.prescribingDoctor !== undefined) dbUpdates.prescribing_doctor = merged.prescribingDoctor;
     if (updates.startDate         !== undefined) dbUpdates.start_date         = merged.startDate;
@@ -1022,12 +1034,25 @@ export const useStore = create<AppState>((set, get) => ({
         patient_id:    log.patientId,
         date:          log.date,
         time:          log.time,
+        scheduled_time: log.scheduledTime ?? null,
+        // Overwritten by the stamp_medication_log_author trigger
         given_by:      log.givenBy,
         notes:         log.notes || null,
         refused:       log.refused,
+        client_request_id: log.clientRequestId,
       })
       .select('*, patients(first_name, last_name), medications(name)')
       .single();
+    if (error?.code === '23505') {
+      // Same idempotency key: an earlier attempt already saved — show it
+      if (error.message.includes('client_request_id')) {
+        await get().fetchMedicationLogs();
+        return;
+      }
+      if (error.message.includes('one_given_per_slot')) {
+        throw new Error('This dose has already been recorded as given. Refresh to see who gave it.');
+      }
+    }
     if (error) throw error;
     set((state) => ({ medicationLogs: [mapMedicationLog(data), ...state.medicationLogs] }));
   },
